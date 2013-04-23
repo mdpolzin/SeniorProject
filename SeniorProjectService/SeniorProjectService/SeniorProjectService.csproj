@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FriendlyPortName.cs" />
+    <Compile Include="Messages.cs" />
     <Compile Include="SeniorProject.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -12,6 +12,7 @@ namespace SeniorProjectService
     {
         static SerialPort _serialPort;
         static bool _continue;
+
         public static void Main()
         {
             string message;
@@ -58,73 +59,24 @@ namespace SeniorProjectService
             {
                 try
                 {
-                    int message = ReadByte();
+                    int message = _serialPort.ReadByte();
 
                     if (message == 0x7E)
                     {
-                        int length;
-
-                        int MSB = ReadByte();
-                        int LSB = ReadByte();
-                        length = (MSB << 8) | LSB;
-
-                        int ID = ReadByte();
-
-                        ulong source = 0;
-                        int sourceBytes = 0;
-
-                        if (ID == 0x81)
+                        XbeeRx64Bit incoming = new XbeeRx64Bit();
+                        if (incoming.ParseIncomingMessage(_serialPort))
                         {
-                            sourceBytes = 2;
-                            //source = (ReadByte() << 8) | ReadByte();
+                            Console.Write("Message: ");
+                            foreach (int i in incoming.GetMessage())
+                            {
+                                Console.Write((char)i);
+                            }
+                            Console.WriteLine();
                         }
-                        else if (ID == 0x80)
-                        {
-                            sourceBytes = 8;
-                        }
-
-                        for (int x = 0; x < sourceBytes; x++)
-                        {
-                            source = (source << 8) | (uint)ReadByte();
-                        }
-
-                        int RSSI = ReadByte();
-                        int options = ReadByte();
-
-                        List<int> data = new List<int>();
-
-                        for (int i = 0; i < length - (3 + sourceBytes); i++)
-                        {
-                            data.Add(ReadByte());
-                        }
-
-                        int checksum = ReadByte();
-
-                        Console.WriteLine("Message received. Source: {0:X}", source);
-                        Console.Write("Message: ");
-                        foreach (char i in data)
-                        {
-                            Console.Write("{0}", i);
-                        }
-                        Console.WriteLine();
-
                     }
                 }
                 catch (TimeoutException) { }
             }
-        }
-
-        public static int ReadByte()
-        {
-            int readByte;
-
-            readByte = _serialPort.ReadByte();
-            if (readByte == 0x7D)
-            {
-                readByte = _serialPort.ReadByte() ^ 0x20;
-            }
-
-            return readByte;
         }
 
         public static string SetPortName(string defaultPortName)
