@@ -1,1 +1,6 @@
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.exe.config
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.exe
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.pdb
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.exe
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.pdb
