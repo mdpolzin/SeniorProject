@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SeniorProjectService
 {
-    class XbeeRx64Bit
+    public class XbeeRx64Bit
     {
         /*********************************DATA MEMBERS*********************************/
         private int length;
@@ -23,7 +23,7 @@ namespace SeniorProjectService
         private int options;
 
         private List<int> data = new List<int>();
-        
+
         private int checksum;
         private int internalChecksum;
 
@@ -137,15 +137,15 @@ namespace SeniorProjectService
         }
     }
 
-    class XbeeTx64Bit
+    public class XbeeTx64Bit
     {
         /* Constants */
-        static const byte API_ID = 0x00;
-        static const byte OPTION_NONE = 0x00;
-        static const byte OPTION_DISABLE_ACK = 0X01;
-        static const byte OPTION_SEND_WITH_BROADCAST_ID = 0x04;
-        static const byte FRAME_DELIMITER = 0X79;
-        static const ulong BROADCAST_ADDRESS = 0xFFFF;
+        const byte API_ID = 0x00;
+        const byte OPTION_NONE = 0x00;
+        const byte OPTION_DISABLE_ACK = 0X01;
+        const byte OPTION_SEND_WITH_BROADCAST_ID = 0x04;
+        const byte FRAME_DELIMITER = 0X7E;
+        const ulong BROADCAST_ADDRESS = 0xFFFF;
 
         /* Static outgoing ID */
         static byte msgID = 0;
@@ -166,22 +166,22 @@ namespace SeniorProjectService
         /// <param name="_data">Data to send across. Limit 100 bytes</param>
         /// <param name="_destination">Destination address. Default is BROADCAST_ADDRESS</param>
         /// <param name="_options">Options for this packet. Default is OPTION_NONE</param>
-        XbeeTx64Bit(List<byte> _data, ulong _destination = BROADCAST_ADDRESS, byte _options = OPTION_NONE)
+        public XbeeTx64Bit(List<byte> _data, ulong _destination = BROADCAST_ADDRESS, byte _options = OPTION_NONE)
         {
             data = _data;
             destination = _destination;
             options = _options;
 
             byteStream.Add(FRAME_DELIMITER);
-            length = data.Count + 4;
+            length = data.Count + 11;
 
             //Add MSB followed by LSB to the byte stream
             byteStream.Add((byte)((length >> 8) & 0xFF));
             byteStream.Add((byte)(length & 0xFF));
-            
+
             //Add API ID to the byte stream
             byteStream.Add(API_ID);
-            
+
             //Add msg ID to the byte stream
             byteStream.Add(msgID++);
 
@@ -191,9 +191,21 @@ namespace SeniorProjectService
                 byteStream.Add((byte)((destination >> i * 8) & 0xFF));
             }
 
+            byteStream.Add(options);
+
             byteStream.AddRange(data);
 
             byteStream.Add(CalculateChecksum());
+
+            for (int i = 1; i < byteStream.Count; i++)
+            {
+                if (byteStream[i] == 0x7E || byteStream[i] == 0x7D || byteStream[i] == 0x11 || byteStream[i] == 0x13)
+                {
+                    byteStream[i] = (byte)(byteStream[i] | 0x20);
+                    byteStream.Insert(i, (byte)0x7D);
+                    i++;
+                }
+            }
         }
 
         private byte CalculateChecksum()
@@ -210,5 +222,9 @@ namespace SeniorProjectService
             return checksum;
         }
 
+        public void Send(SerialPort _serialPort)
+        {
+            _serialPort.Write(byteStream.ToArray(), 0, byteStream.Count);
+        }
     }
 }

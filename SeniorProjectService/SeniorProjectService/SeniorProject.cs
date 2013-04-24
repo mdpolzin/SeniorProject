@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace SeniorProjectService
 {
-    class Program
+    public class Program
     {
         static SerialPort _serialPort;
         static bool _continue;
@@ -54,11 +54,21 @@ namespace SeniorProjectService
                 {
                     _continue = false;
                 }
+
+                List<byte> byteMessage = new List<byte>();
+                foreach (char c in message)
+                {
+                    byteMessage.Add((byte)c);
+                }
+                XbeeTx64Bit transmit = new XbeeTx64Bit(byteMessage);
+
+                transmit.Send(_serialPort);
             }
 
             sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
+            trayIcon.Dispose();
         }
 
         public static string SetPortName(string defaultPortName)
@@ -133,7 +143,6 @@ namespace SeniorProjectService
 
         private static void OnExit(object sender, EventArgs e)
         {
-            trayIcon.Dispose();
             _continue = false;
             Application.Exit();
         }
