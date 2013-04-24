@@ -10,3 +10,5 @@ D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\o
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.exe
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.pdb
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
+D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.Window.resources
+D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache

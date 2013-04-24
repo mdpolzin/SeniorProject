@@ -10,20 +10,22 @@ using System.Windows.Forms;
 
 namespace SeniorProjectService
 {
-    public class Program
+    public class Service
     {
-        static SerialPort _serialPort;
-        static bool _continue;
-        static HashSet<ulong> remoteNodeAddresses = new HashSet<ulong>();
-        private static NotifyIcon trayIcon;
-        private static ContextMenu trayMenu;
+        public static SerialPort _serialPort;
+        public static bool _continue;
+        public static HashSet<ForeignNode> remoteNodeAddresses = new HashSet<ForeignNode>();
 
+        public static ForeignNode BROADCAST = new ForeignNode(0xFFFF, "Broadcast");
+        
         public static void Main()
         {
-            string message;
             StringComparer stringComparer = StringComparer.OrdinalIgnoreCase;
             Thread readThread = new Thread(Read);
-            Thread sysTrayThread = new Thread(SystemTrayIcon);
+            Thread sysTrayThread = new Thread(MenuControl.SystemTrayIcon);
+
+            remoteNodeAddresses.Add(BROADCAST);
+
             sysTrayThread.Start();
 
             // Create a new SerialPort object with default settings.
@@ -31,7 +33,7 @@ namespace SeniorProjectService
 
 
             // Allow the user to set the appropriate properties.
-            _serialPort.PortName = SetPortName(_serialPort.PortName);
+            _serialPort.PortName = "COM3";//SetPortName(_serialPort.PortName);
             _serialPort.Encoding = Encoding.UTF8;
 
             // Set the read/write timeouts
@@ -44,8 +46,7 @@ namespace SeniorProjectService
             _continue = true;
             readThread.Start();
 
-            Console.WriteLine("Type QUIT to exit");
-
+            /*
             while (_continue)
             {
                 message = Console.ReadLine();
@@ -64,8 +65,8 @@ namespace SeniorProjectService
 
                 transmit.Send(_serialPort);
             }
+            */
 
-            sysTrayThread.Abort();
             sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
@@ -110,7 +111,7 @@ namespace SeniorProjectService
                         {
                             if (!incoming.GetIsTxResponse())
                             {
-                                remoteNodeAddresses.Add(incoming.GetRemoteAddress());
+                                remoteNodeAddresses.Add(new ForeignNode(incoming.GetRemoteAddress()));
                             }
                             Console.Write("Message: ");
                             foreach (int i in incoming.GetMessage())
@@ -123,32 +124,6 @@ namespace SeniorProjectService
                 }
                 catch (TimeoutException) { }
             }
-        }
-
-        /// <summary>
-        /// Operates System Tray Icon and Menu in a separate thread
-        /// </summary>
-        public static void SystemTrayIcon()
-        {
-            trayMenu = new ContextMenu();
-            trayMenu.MenuItems.Add("Exit", OnExit);
-            trayMenu.MenuItems.Add("-");
-            trayMenu.MenuItems.Add("Stuff");
-
-            trayIcon = new NotifyIcon();
-            trayIcon.Text = "MyTrayApp";
-            trayIcon.Icon = new Icon(SystemIcons.Application, 40, 40);
-
-            trayIcon.ContextMenu = trayMenu;
-            trayIcon.Visible = true;
-            Application.Run();
-        }
-
-        private static void OnExit(object sender, EventArgs e)
-        {
-            trayIcon.Dispose();
-            _continue = false;
-            Application.Exit();
         }
     }
 }
