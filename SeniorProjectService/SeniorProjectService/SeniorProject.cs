@@ -68,7 +68,6 @@ namespace SeniorProjectService
             sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
-            trayIcon.Dispose();
         }
 
         public static string SetPortName(string defaultPortName)
@@ -105,10 +104,13 @@ namespace SeniorProjectService
 
                     if (message == 0x7E)
                     {
-                        XbeeRx64Bit incoming = new XbeeRx64Bit();
+                        XbeeRx incoming = new XbeeRx();
                         if (incoming.ParseIncomingMessage(_serialPort))
                         {
-                            remoteNodeAddresses.Add(incoming.GetRemoteAddress());
+                            if (!incoming.GetIsTxResponse())
+                            {
+                                remoteNodeAddresses.Add(incoming.GetRemoteAddress());
+                            }
                             Console.Write("Message: ");
                             foreach (int i in incoming.GetMessage())
                             {
@@ -141,8 +143,11 @@ namespace SeniorProjectService
             Application.Run();
         }
 
+
+
         private static void OnExit(object sender, EventArgs e)
         {
+            trayIcon.Dispose();
             _continue = false;
             Application.Exit();
         }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SeniorProjectService
 {
-    public class XbeeRx64Bit
+    public class XbeeRx
     {
         /*********************************DATA MEMBERS*********************************/
         private int length;
@@ -19,8 +19,10 @@ namespace SeniorProjectService
         private ulong source;
         private int sourceBytes;
 
-        private int RSSI;
-        private int options;
+        private bool isTxResponse = false;
+
+        private int RSSI_or_FrameID;
+        private int Options_or_Status;
 
         private List<int> data = new List<int>();
 
@@ -52,14 +54,19 @@ namespace SeniorProjectService
             {
                 sourceBytes = 8;
             }
+            else if (APIid == 0x89)
+            {
+                isTxResponse = true;
+                //sourceBytes remains 0
+            }
 
             for (int x = 0; x < sourceBytes; x++)
             {
                 source = (source << 8) | (uint)ReadByte(_serialPort);
             }
 
-            RSSI = ReadByte(_serialPort);
-            options = ReadByte(_serialPort);
+            RSSI_or_FrameID = ReadByte(_serialPort);
+            Options_or_Status = ReadByte(_serialPort);
 
             for (int i = 0; i < length - (3 + sourceBytes); i++)
             {
@@ -91,6 +98,33 @@ namespace SeniorProjectService
             return source;
         }
 
+        /// <summary>
+        /// Returns the value of the byte in the RSSI or FrameID location (depends on type of packet received)
+        /// </summary>
+        /// <returns>Represents RSSI if isTxResponse == false</returns>
+        public int GetRSSI_or_FrameID()
+        {
+            return RSSI_or_FrameID;
+        }
+
+        /// <summary>
+        /// Returns the value of the byte in the Options or Status location (depends on the type of packet received)
+        /// </summary>
+        /// <returns>Represents Options if isTxResponse == false</returns>
+        public int GetOptions_or_Status()
+        {
+            return Options_or_Status;
+        }
+
+        /// <summary>
+        /// Returns true if this message is in response to a Tx packet
+        /// </summary>
+        /// <returns>True if this message is a Tx packet, false otherwise</returns>
+        public bool GetIsTxResponse()
+        {
+            return isTxResponse;
+        }
+
         /*********************************PRIVATE FUNCTIONS*********************************/
         /// <summary>
         /// Calculates the checksum from the components of the bitstream
@@ -106,8 +140,8 @@ namespace SeniorProjectService
                 int addition = (int)(source >> (i * 8)) & 0xFF;
                 ret += addition;
             }
-            ret += RSSI;
-            ret += options;
+            ret += RSSI_or_FrameID;
+            ret += Options_or_Status;
             foreach (int i in data)
             {
                 ret += i;
