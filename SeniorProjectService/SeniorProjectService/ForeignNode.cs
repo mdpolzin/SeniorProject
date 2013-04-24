@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SeniorProjectService
 {
+    [Serializable]
     public class ForeignNode
     {
         string name;

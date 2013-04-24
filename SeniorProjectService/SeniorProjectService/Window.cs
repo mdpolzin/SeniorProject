@@ -17,7 +17,7 @@ namespace SeniorProjectService
             InitializeComponent();
             List<string> source = new List<string>();
 
-            foreach (ForeignNode addr in Service.remoteNodeAddresses)
+            foreach (ForeignNode addr in Service.remoteNodeList)
             {
                 source.Add(addr.GetName());
             }
@@ -33,11 +33,11 @@ namespace SeniorProjectService
             {
                 //Get address portion of string, e.g. "Unknown name. 0x001234567890ABCD"
                 string addr = ux_AddressDropDown.Text.Split(' ')[2];
-                address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetHexAddress() == addr).GetAddress();
+                address = Service.remoteNodeList.Single<ForeignNode>(node => node.GetHexAddress() == addr).GetAddress();
             }
             else
             {
-                address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetName() == ux_AddressDropDown.Text).GetAddress();
+                address = Service.remoteNodeList.Single<ForeignNode>(node => node.GetName() == ux_AddressDropDown.Text).GetAddress();
             }
 
             List<byte> byteMessage = new List<byte>();

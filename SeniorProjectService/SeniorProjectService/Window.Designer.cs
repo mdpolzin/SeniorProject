@@ -46,7 +46,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 112);
+            this.label1.Location = new System.Drawing.Point(-3, 112);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(92, 13);
             this.label1.TabIndex = 1;
@@ -56,10 +56,10 @@
             // 
             this.ux_AddressDropDown.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ux_AddressDropDown.FormattingEnabled = true;
-            this.ux_AddressDropDown.Location = new System.Drawing.Point(111, 112);
+            this.ux_AddressDropDown.Location = new System.Drawing.Point(85, 112);
             this.ux_AddressDropDown.MaxDropDownItems = 100;
             this.ux_AddressDropDown.Name = "ux_AddressDropDown";
-            this.ux_AddressDropDown.Size = new System.Drawing.Size(160, 21);
+            this.ux_AddressDropDown.Size = new System.Drawing.Size(186, 21);
             this.ux_AddressDropDown.TabIndex = 2;
             // 
             // label2

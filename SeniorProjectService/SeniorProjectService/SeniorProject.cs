@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -14,17 +17,16 @@ namespace SeniorProjectService
     {
         public static SerialPort _serialPort;
         public static bool _continue;
-        public static HashSet<ForeignNode> remoteNodeAddresses = new HashSet<ForeignNode>();
+        public static HashSet<ForeignNode> remoteNodeList = new HashSet<ForeignNode>();
 
         public static ForeignNode BROADCAST = new ForeignNode(0xFFFF, "Broadcast");
         
         public static void Main()
         {
+            DeserializeData();
             StringComparer stringComparer = StringComparer.OrdinalIgnoreCase;
             Thread readThread = new Thread(Read);
             Thread sysTrayThread = new Thread(MenuControl.SystemTrayIcon);
-
-            remoteNodeAddresses.Add(BROADCAST);
 
             sysTrayThread.Start();
 
@@ -46,32 +48,62 @@ namespace SeniorProjectService
             _continue = true;
             readThread.Start();
 
-            /*
-            while (_continue)
-            {
-                message = Console.ReadLine();
-
-                if (stringComparer.Equals("quit", message))
-                {
-                    _continue = false;
-                }
-
-                List<byte> byteMessage = new List<byte>();
-                foreach (char c in message)
-                {
-                    byteMessage.Add((byte)c);
-                }
-                XbeeTx64Bit transmit = new XbeeTx64Bit(byteMessage);
-
-                transmit.Send(_serialPort);
-            }
-            */
-
             sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
+
+            SerializeData();
         }
 
+        private static void SerializeData()
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream fs = new FileStream("ServiceInformation.dat", FileMode.OpenOrCreate);
+
+            try
+            {
+                bf.Serialize(fs, remoteNodeList);
+            }
+            catch (SerializationException e)
+            {
+                throw;
+            }
+            finally
+            {
+                fs.Close();
+            }
+        }
+
+        private static void DeserializeData()
+        {
+            if (File.Exists("ServiceInformation.dat"))
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                FileStream fs = new FileStream("ServiceInformation.dat", FileMode.Open);
+
+                try
+                {
+
+                    // Deserialize the hashtable from the file and  
+                    // assign the reference to the local variable.
+                    remoteNodeList = (HashSet<ForeignNode>)bf.Deserialize(fs);
+                }
+                catch (SerializationException e)
+                {
+                    remoteNodeList = new HashSet<ForeignNode>();
+                    remoteNodeList.Add(BROADCAST);
+                }
+                finally
+                {
+                    fs.Close();
+                }
+            }
+            else
+            {
+                remoteNodeList.Add(BROADCAST);
+            }
+        }
+        
         public static string SetPortName(string defaultPortName)
         {
             string portName;
@@ -109,9 +141,9 @@ namespace SeniorProjectService
                         XbeeRx incoming = new XbeeRx();
                         if (incoming.ParseIncomingMessage(_serialPort))
                         {
-                            if (!incoming.GetIsTxResponse())
+                            if (!incoming.GetIsTxResponse() && !remoteNodeList.Any<ForeignNode>(node => node.GetAddress() == incoming.GetRemoteAddress()))
                             {
-                                remoteNodeAddresses.Add(new ForeignNode(incoming.GetRemoteAddress()));
+                                remoteNodeList.Add(new ForeignNode(incoming.GetRemoteAddress()));
                             }
                             Console.Write("Message: ");
                             foreach (int i in incoming.GetMessage())
