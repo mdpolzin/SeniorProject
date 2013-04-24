@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace SeniorProjectService
 {
@@ -12,12 +14,17 @@ namespace SeniorProjectService
     {
         static SerialPort _serialPort;
         static bool _continue;
+        static HashSet<ulong> remoteNodeAddresses = new HashSet<ulong>();
+        private static NotifyIcon trayIcon;
+        private static ContextMenu trayMenu;
 
         public static void Main()
         {
             string message;
             StringComparer stringComparer = StringComparer.OrdinalIgnoreCase;
             Thread readThread = new Thread(Read);
+            Thread sysTrayThread = new Thread(SystemTrayIcon);
+            sysTrayThread.Start();
 
             // Create a new SerialPort object with default settings.
             _serialPort = new SerialPort();
@@ -28,7 +35,7 @@ namespace SeniorProjectService
             _serialPort.Encoding = Encoding.UTF8;
 
             // Set the read/write timeouts
-            _serialPort.ReadTimeout = 1500;
+            _serialPort.ReadTimeout = 500;
             _serialPort.WriteTimeout = 500;
 
             _serialPort.Open();
@@ -49,34 +56,9 @@ namespace SeniorProjectService
                 }
             }
 
+            sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
-        }
-
-        public static void Read()
-        {
-            while (_continue)
-            {
-                try
-                {
-                    int message = _serialPort.ReadByte();
-
-                    if (message == 0x7E)
-                    {
-                        XbeeRx64Bit incoming = new XbeeRx64Bit();
-                        if (incoming.ParseIncomingMessage(_serialPort))
-                        {
-                            Console.Write("Message: ");
-                            foreach (int i in incoming.GetMessage())
-                            {
-                                Console.Write((char)i);
-                            }
-                            Console.WriteLine();
-                        }
-                    }
-                }
-                catch (TimeoutException) { }
-            }
         }
 
         public static string SetPortName(string defaultPortName)
@@ -97,6 +79,63 @@ namespace SeniorProjectService
                 portName = defaultPortName;
             }
             return portName;
+        }
+
+
+        /// <summary>
+        /// Reads from a separate thread
+        /// </summary>
+        public static void Read()
+        {
+            while (_continue)
+            {
+                try
+                {
+                    int message = _serialPort.ReadByte();
+
+                    if (message == 0x7E)
+                    {
+                        XbeeRx64Bit incoming = new XbeeRx64Bit();
+                        if (incoming.ParseIncomingMessage(_serialPort))
+                        {
+                            remoteNodeAddresses.Add(incoming.GetRemoteAddress());
+                            Console.Write("Message: ");
+                            foreach (int i in incoming.GetMessage())
+                            {
+                                Console.Write((char)i);
+                            }
+                            Console.WriteLine();
+                        }
+                    }
+                }
+                catch (TimeoutException) { }
+            }
+        }
+
+        /// <summary>
+        /// Operates System Tray Icon and Menu in a separate thread
+        /// </summary>
+        public static void SystemTrayIcon()
+        {
+            trayMenu = new ContextMenu();
+            trayMenu.MenuItems.Add("Exit", OnExit);
+            trayMenu.MenuItems.Add("-");
+            trayMenu.MenuItems.Add("Stuff");
+
+            trayIcon = new NotifyIcon();
+            trayIcon.Text = "MyTrayApp";
+            trayIcon.Icon = new Icon(SystemIcons.Application, 40, 40);
+
+            trayIcon.ContextMenu = trayMenu;
+            trayIcon.Visible = true;
+            Application.Run();
+        }
+
+        private static void OnExit(object sender, EventArgs e)
+        {
+            trayIcon.Dispose();
+            _continue = false;
+            Application.Exit();
         }
     }
 }
