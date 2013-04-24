@@ -65,6 +65,7 @@ namespace SeniorProjectService
                 transmit.Send(_serialPort);
             }
 
+            sysTrayThread.Abort();
             sysTrayThread.Join();
             readThread.Join();
             _serialPort.Close();
@@ -142,8 +143,6 @@ namespace SeniorProjectService
             trayIcon.Visible = true;
             Application.Run();
         }
-
-
 
         private static void OnExit(object sender, EventArgs e)
         {
