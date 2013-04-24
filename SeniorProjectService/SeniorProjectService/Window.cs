@@ -28,23 +28,16 @@ namespace SeniorProjectService
         private void ux_SendButton_Click(object sender, EventArgs e)
         {
             ulong address;
-            if (ux_AddressDropDown.Text == "")
+
+            if (ux_AddressDropDown.Text.Contains("Unknown"))
             {
-                address = 0xFFFF;
+                //Get address portion of string, e.g. "Unknown name. 0x001234567890ABCD"
+                string addr = ux_AddressDropDown.Text.Split(' ')[2];
+                address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetHexAddress() == addr).GetAddress();
             }
             else
             {
-
-                if (ux_AddressDropDown.Text.Contains("Unknown"))
-                {
-                    //Get address portion of string, e.g. "Unknown name. 0x001234567890ABCD"
-                    string addr = ux_AddressDropDown.Text.Split(' ')[2];
-                    address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetHexAddress() == addr).GetAddress();
-                }
-                else
-                {
-                    address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetName() == ux_AddressDropDown.Text).GetAddress();
-                }
+                address = Service.remoteNodeAddresses.Single<ForeignNode>(node => node.GetName() == ux_AddressDropDown.Text).GetAddress();
             }
 
             List<byte> byteMessage = new List<byte>();
