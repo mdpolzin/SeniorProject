@@ -24,7 +24,7 @@ namespace SeniorProjectService
             triggerable = _triggerable;
         }
 
-        public void Trigger()
+        public void Throw()
         {
             count++;
         }

@@ -5,6 +5,7 @@
 #define NAME_BYTE    0x01
 #define BRAND_BYTE   0X03
 #define EVENT_BYTE   0x05
+#define THROW_BYTE   0x07
 
 const char NAME[] = "Remote Arduino";
 const char BRAND[] = "MichaelCorp";
@@ -15,9 +16,16 @@ char event1_desc[] = "Description goes here";
 uint8_t event1_id = 1;
 uint8_t event1_trig = 1;
 
+/* Event 2 */
+char event2_name[] = "Event2";
+char event2_desc[] = "This one can't be triggered";
+uint8_t event2_id = 2;
+uint8_t event2_trig = 0;
+
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 Rx64Response rx64 = Rx64Response();
+XBeeAddress64 addr64;
 
 int statusLed = 11;
 int errorLed = 12;
@@ -25,6 +33,8 @@ int dataLed = 10;
 
 uint8_t option = 0;
 uint8_t* data = 0;
+
+bool registered;
 
 void flashLed(int pin, int times, int wait)
 {    
@@ -46,6 +56,10 @@ void setup() {
   pinMode(errorLed, OUTPUT);
   pinMode(dataLed,  OUTPUT);
   
+  randomSeed(analogRead(5));
+  
+  registered = false;
+  
   // start serial
   Serial.begin(9600);
   xbee.setSerial(Serial);
@@ -53,7 +67,8 @@ void setup() {
   flashLed(statusLed, 3, 50);
 }
 
-// continuously reads packets, looking for RX16 or RX64
+// continuously reads packets, looking for RX64
+// Also randomly throws events
 void loop()
 {
     xbee.readPacket();
@@ -62,6 +77,8 @@ void loop()
     {
       HandleXbeePacket();
     }
+    
+    ThrowEvent();
 }
 
 void HandleXbeePacket()
@@ -72,7 +89,7 @@ void HandleXbeePacket()
     Tx64Request tx;
     
     xbee.getResponse().getRx64Response(rx64);
-    XBeeAddress64 addr64 = rx64.getRemoteAddress64();
+    addr64 = rx64.getRemoteAddress64();
     option = rx64.getOption();
     data = rx64.getData();
     
@@ -122,10 +139,31 @@ void HandleXbeePacket()
         xbee.send(tx);
         AwaitConfirmation();
         
+        //Event2 information
+        uint8_t payload4[sizeof(event2_name) + sizeof(event2_desc) + 5];
+        byte_loc = 0;
+        payload4[byte_loc++] = EVENT_BYTE;
+        payload4[byte_loc++] = (uint8_t)sizeof(event2_name);
+        for(int i = 0; i < sizeof(event2_name); i++)
+        {
+          payload4[byte_loc++] = event2_name[i];
+        }
+        payload4[byte_loc++] = (uint8_t)sizeof(event2_desc);
+        for(int i = 0; i < sizeof(event2_desc); i++)
+        {
+          payload4[byte_loc++] = event2_desc[i];
+        }
+        payload4[byte_loc++] = event2_id;
+        payload4[byte_loc++] = event2_trig;
+        
+        tx = Tx64Request(addr64, payload4, sizeof(payload4));
+        xbee.send(tx);
+        AwaitConfirmation();
+        
+        registered = true;
+        
         break;
     }
-    
-    
   }
   else
   {
@@ -168,5 +206,33 @@ void AwaitConfirmation()
   {
     // local XBee did not provide a timely TX Status Response.  Radio is not configured properly or connected
     flashLed(errorLed, 2, 50);
+  }
+}
+
+void ThrowEvent()
+{
+  if(!registered)
+    return;
+    
+  long randNum = random(1000);
+  
+  if(randNum == 0)
+  {
+    Tx64Request tx;
+    uint8_t  payload[2];
+    payload[0] = THROW_BYTE;
+    
+    if(random(2) == 0)
+    {
+      payload[1] = event1_id;
+    }
+    else
+    {
+      payload[1] = event2_id;
+    }
+    
+    tx = Tx64Request(addr64, payload, sizeof(payload));
+    xbee.send(tx);
+    AwaitConfirmation();
   }
 }

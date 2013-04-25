@@ -15,6 +15,7 @@ namespace SeniorProjectService
         ulong address;
         string addressHexRepresentation;
         List<Event> events = new List<Event>();
+        bool registered = false;
 
         public ForeignNode(ulong _address)
         {
@@ -22,6 +23,7 @@ namespace SeniorProjectService
             addressHexRepresentation = "0x" + String.Format("{0:X}", address);
 
             name = "Unknown Node. " + addressHexRepresentation;
+            alias = name;
         }
 
         public ForeignNode(ulong _address, string _name)
@@ -30,6 +32,7 @@ namespace SeniorProjectService
             addressHexRepresentation = "0x" + String.Format("{0:X}", address);
 
             name = _name;
+            alias = name;
         }
 
         /// <summary>
@@ -72,6 +75,11 @@ namespace SeniorProjectService
             return name;
         }
 
+        public bool GetRegistered()
+        {
+            return registered;
+        }
+
         public void SetAlias(string _alias)
         {
             alias = _alias;
@@ -85,6 +93,16 @@ namespace SeniorProjectService
         public void SetName(string _name)
         {
             name = _name;
+        }
+
+        public void SetRegistered(bool reg)
+        {
+            registered = reg;
+        }
+
+        public void ThrowEvent(int eventID)
+        {
+            events.Single<Event>(e => e.ID == eventID).Throw();
         }
     }
 }

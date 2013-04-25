@@ -19,6 +19,7 @@ namespace SeniorProjectService
         const byte NAME_BYTE = 0x01;
         const byte BRAND_BYTE = 0X03;
         const byte EVENT_BYTE = 0X05;
+        const byte THROW_BYTE = 0x07;
 
         public static SerialPort _serialPort;
         public static bool _continue;
@@ -84,7 +85,6 @@ namespace SeniorProjectService
 
                 try
                 {
-
                     // Deserialize the hashtable from the file and  
                     // assign the reference to the local variable.
                     remoteNodeList = (HashSet<ForeignNode>)bf.Deserialize(fs);
@@ -150,6 +150,8 @@ namespace SeniorProjectService
                             List<int> data = incoming.GetMessage();
                             ForeignNode contactingNode = remoteNodeList.Single<ForeignNode>(node => node.GetAddress() == incoming.GetRemoteAddress());
 
+                            int byteCounter;
+
                             switch (data[0])
                             {
                                 /* Responding to ping. Rest of message is the name of the unit. */
@@ -174,6 +176,7 @@ namespace SeniorProjectService
                                         }
                                     }
                                     contactingNode.SetAlias(contactingNode.GetName() + count.ToString());
+                                    contactingNode.SetRegistered(true);
                                     break;
 
                                 /* Responding to ping. Rest of message is the brand of the unit. */
@@ -187,11 +190,12 @@ namespace SeniorProjectService
                                     contactingNode.SetBrand(brand);
                                     break;
 
+                                /* Responding to ping. Rest of message is a distinct Event. */
                                 case EVENT_BYTE:
-                                    int byteCounter = 1;
+                                    byteCounter = 1;
                                     int nameLen = data[byteCounter++];
                                     string eventName = "";
-                                    for(int i = 0; i < nameLen; i++)
+                                    for (int i = 0; i < nameLen; i++)
                                     {
                                         if ((char)data[byteCounter] != '\0')
                                             eventName += (char)data[byteCounter];
@@ -200,7 +204,7 @@ namespace SeniorProjectService
 
                                     int descLen = data[byteCounter++];
                                     string description = "";
-                                    for(int i = 0; i < descLen; i++)
+                                    for (int i = 0; i < descLen; i++)
                                     {
                                         if ((char)data[byteCounter] != '\0')
                                             description += (char)data[byteCounter];
@@ -212,6 +216,12 @@ namespace SeniorProjectService
                                     Event e = new Event(eventName, description, eventID, (data[byteCounter] > 0));
 
                                     contactingNode.AddEvent(e);
+                                    break;
+
+                                case THROW_BYTE:
+                                    byteCounter = 1;
+                                    if (contactingNode.GetRegistered())
+                                        contactingNode.ThrowEvent(data[byteCounter]);
                                     break;
 
                                 default:
