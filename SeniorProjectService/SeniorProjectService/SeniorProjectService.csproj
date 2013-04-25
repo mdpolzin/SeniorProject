@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Event.cs" />
     <Compile Include="ForeignNode.cs" />
     <Compile Include="MenuControl.cs" />
     <Compile Include="FriendlyPortName.cs" />

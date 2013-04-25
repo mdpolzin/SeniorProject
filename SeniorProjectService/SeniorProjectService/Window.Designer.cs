@@ -40,26 +40,26 @@
             this.ux_TextBox.Location = new System.Drawing.Point(12, 30);
             this.ux_TextBox.Multiline = true;
             this.ux_TextBox.Name = "ux_TextBox";
-            this.ux_TextBox.Size = new System.Drawing.Size(260, 75);
+            this.ux_TextBox.Size = new System.Drawing.Size(305, 75);
             this.ux_TextBox.TabIndex = 0;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(-3, 112);
+            this.label1.Location = new System.Drawing.Point(9, 117);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(92, 13);
+            this.label1.Size = new System.Drawing.Size(56, 13);
             this.label1.TabIndex = 1;
-            this.label1.Text = "Known Addresses";
+            this.label1.Text = "Addresses";
             // 
             // ux_AddressDropDown
             // 
             this.ux_AddressDropDown.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ux_AddressDropDown.FormattingEnabled = true;
-            this.ux_AddressDropDown.Location = new System.Drawing.Point(85, 112);
+            this.ux_AddressDropDown.Location = new System.Drawing.Point(63, 114);
             this.ux_AddressDropDown.MaxDropDownItems = 100;
             this.ux_AddressDropDown.Name = "ux_AddressDropDown";
-            this.ux_AddressDropDown.Size = new System.Drawing.Size(186, 21);
+            this.ux_AddressDropDown.Size = new System.Drawing.Size(254, 21);
             this.ux_AddressDropDown.TabIndex = 2;
             // 
             // label2
@@ -73,7 +73,7 @@
             // 
             // ux_SendButton
             // 
-            this.ux_SendButton.Location = new System.Drawing.Point(197, 139);
+            this.ux_SendButton.Location = new System.Drawing.Point(242, 142);
             this.ux_SendButton.Name = "ux_SendButton";
             this.ux_SendButton.Size = new System.Drawing.Size(75, 23);
             this.ux_SendButton.TabIndex = 4;
@@ -85,7 +85,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 174);
+            this.ClientSize = new System.Drawing.Size(329, 177);
             this.Controls.Add(this.ux_SendButton);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.ux_AddressDropDown);

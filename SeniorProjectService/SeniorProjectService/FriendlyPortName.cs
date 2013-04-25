@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * This code was found at http://dariosantarelli.wordpress.com/2010/10/18/c-how-to-programmatically-find-a-com-port-by-friendly-name/
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

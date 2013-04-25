@@ -10,8 +10,11 @@ namespace SeniorProjectService
     public class ForeignNode
     {
         string name;
+        string alias;
+        string brand;
         ulong address;
         string addressHexRepresentation;
+        List<Event> events = new List<Event>();
 
         public ForeignNode(ulong _address)
         {
@@ -29,9 +32,9 @@ namespace SeniorProjectService
             name = _name;
         }
 
-        public string GetName()
+        public void AddEvent(Event e)
         {
-            return name;
+            events.Add(e);
         }
 
         public ulong GetAddress()
@@ -42,6 +45,26 @@ namespace SeniorProjectService
         public string GetHexAddress()
         {
             return addressHexRepresentation;
+        }
+
+        public string GetName()
+        {
+            return name;
+        }
+
+        public void SetAlias(string _alias)
+        {
+            alias = _alias;
+        }
+
+        public void SetBrand(string _brand)
+        {
+            brand = _brand;
+        }
+
+        public void SetName(string _name)
+        {
+            name = _name;
         }
     }
 }

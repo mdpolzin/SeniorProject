@@ -182,6 +182,7 @@ namespace SeniorProjectService
         const ulong BROADCAST_ADDRESS = 0xFFFF;
 
         /* Static outgoing ID */
+        /* Leave at 0 to supress status Rx */
         static byte msgID = 0;
 
         ulong destination;
@@ -217,7 +218,7 @@ namespace SeniorProjectService
             byteStream.Add(API_ID);
 
             //Add msg ID to the byte stream
-            byteStream.Add(msgID++);
+            byteStream.Add(msgID);
 
             //Add Destination Address to the byte stream
             for (int i = 7; i >= 0; i--)

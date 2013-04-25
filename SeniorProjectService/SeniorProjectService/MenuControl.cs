@@ -23,16 +23,25 @@ namespace SeniorProjectService
         {
             trayMenu = new ContextMenu();
             trayMenu.MenuItems.Add("Send Message", OnSend);
+            trayMenu.MenuItems.Add("Ping Nodes", OnPing);
             trayMenu.MenuItems.Add("-");
             trayMenu.MenuItems.Add("Exit", OnExit);
 
             trayIcon = new NotifyIcon();
-            trayIcon.Text = "MyTrayApp";
+            trayIcon.Text = "SmartHome Service";
             trayIcon.Icon = new Icon(SystemIcons.Application, 40, 40);
 
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
             Application.Run();
+        }
+
+        private static void OnPing(object sender, EventArgs e)
+        {
+            List<byte> data = new List<byte>();
+            data.Add(0x00);
+            XbeeTx64Bit transmit = new XbeeTx64Bit(data);
+            transmit.Send(Service._serialPort);
         }
 
         private static void OnSend(object sender, EventArgs e)

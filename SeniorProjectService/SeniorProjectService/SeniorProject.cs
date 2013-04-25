@@ -64,10 +64,6 @@ namespace SeniorProjectService
             {
                 bf.Serialize(fs, remoteNodeList);
             }
-            catch (SerializationException e)
-            {
-                throw;
-            }
             finally
             {
                 fs.Close();
@@ -88,7 +84,7 @@ namespace SeniorProjectService
                     // assign the reference to the local variable.
                     remoteNodeList = (HashSet<ForeignNode>)bf.Deserialize(fs);
                 }
-                catch (SerializationException e)
+                catch (SerializationException)
                 {
                     remoteNodeList = new HashSet<ForeignNode>();
                     remoteNodeList.Add(BROADCAST);
@@ -145,12 +141,46 @@ namespace SeniorProjectService
                             {
                                 remoteNodeList.Add(new ForeignNode(incoming.GetRemoteAddress()));
                             }
-                            Console.Write("Message: ");
-                            foreach (int i in incoming.GetMessage())
+
+                            List<int> data = incoming.GetMessage();
+                            ForeignNode contactingNode = remoteNodeList.Single<ForeignNode>(node => node.GetAddress() == incoming.GetRemoteAddress());
+                            
+                            switch (data[0])
                             {
-                                Console.Write((char)i);
+                                /* Responding to ping. Rest of message is the name of the unit. */
+                                case 0x01:
+                                    string name = "";
+                                    for (int i = 1; i < data.Count; i++)
+                                    {
+                                        name += (char)data[i];
+                                    }
+                                    contactingNode.SetName(name);
+                                    int count = 1;
+                                    foreach (ForeignNode fn in remoteNodeList)
+                                    {
+                                        if (fn == contactingNode)
+                                            continue;
+                                        if (fn.GetName() == contactingNode.GetName())
+                                        {
+                                            count++;
+                                        }
+                                    }
+                                    contactingNode.SetAlias(contactingNode.GetName() + count.ToString());
+                                    break;
+
+                                /* Responding to ping. Rest of message is the brand of the unit. */
+                                case 0x03:
+                                    string brand = "";
+                                     for (int i = 1; i < data.Count; i++)
+                                    {
+                                        brand += (char)data[i];
+                                    }
+                                     contactingNode.SetBrand(brand);
+                                    break;
+
+                                default:
+                                    break;
                             }
-                            Console.WriteLine();
                         }
                     }
                 }
