@@ -24,6 +24,7 @@ namespace SeniorProjectService
             trayMenu = new ContextMenu();
             trayMenu.MenuItems.Add("Send Message", OnSend);
             trayMenu.MenuItems.Add("Ping Nodes", OnPing);
+            trayMenu.MenuItems.Add("Investigate Nodes", OnInvestigate);
             trayMenu.MenuItems.Add("-");
             trayMenu.MenuItems.Add("Exit", OnExit);
 
@@ -34,6 +35,14 @@ namespace SeniorProjectService
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
             Application.Run();
+        }
+
+        private static void OnInvestigate(object sender, EventArgs e)
+        {
+            ConnectedNodesWindow cnw = new ConnectedNodesWindow();
+
+            cnw.WindowState = FormWindowState.Normal;
+            cnw.Visible = true;
         }
 
         private static void OnPing(object sender, EventArgs e)

@@ -15,12 +15,17 @@ namespace SeniorProjectService
 {
     public class Service
     {
+        const byte PING_BYTE = 0x00;
+        const byte NAME_BYTE = 0x01;
+        const byte BRAND_BYTE = 0X03;
+        const byte EVENT_BYTE = 0X05;
+
         public static SerialPort _serialPort;
         public static bool _continue;
         public static HashSet<ForeignNode> remoteNodeList = new HashSet<ForeignNode>();
 
         public static ForeignNode BROADCAST = new ForeignNode(0xFFFF, "Broadcast");
-        
+
         public static void Main()
         {
             DeserializeData();
@@ -99,7 +104,7 @@ namespace SeniorProjectService
                 remoteNodeList.Add(BROADCAST);
             }
         }
-        
+
         public static string SetPortName(string defaultPortName)
         {
             string portName;
@@ -148,7 +153,7 @@ namespace SeniorProjectService
                             switch (data[0])
                             {
                                 /* Responding to ping. Rest of message is the name of the unit. */
-                                case 0x01:
+                                case NAME_BYTE:
                                     string name = "";
                                     for (int i = 1; i < data.Count; i++)
                                     {
@@ -172,7 +177,7 @@ namespace SeniorProjectService
                                     break;
 
                                 /* Responding to ping. Rest of message is the brand of the unit. */
-                                case 0x03:
+                                case BRAND_BYTE:
                                     string brand = "";
                                     for (int i = 1; i < data.Count; i++)
                                     {
@@ -180,6 +185,33 @@ namespace SeniorProjectService
                                             brand += (char)data[i];
                                     }
                                     contactingNode.SetBrand(brand);
+                                    break;
+
+                                case EVENT_BYTE:
+                                    int byteCounter = 1;
+                                    int nameLen = data[byteCounter++];
+                                    string eventName = "";
+                                    for(int i = 0; i < nameLen; i++)
+                                    {
+                                        if ((char)data[byteCounter] != '\0')
+                                            eventName += (char)data[byteCounter];
+                                        byteCounter++;
+                                    }
+
+                                    int descLen = data[byteCounter++];
+                                    string description = "";
+                                    for(int i = 0; i < descLen; i++)
+                                    {
+                                        if ((char)data[byteCounter] != '\0')
+                                            description += (char)data[byteCounter];
+                                        byteCounter++;
+                                    }
+
+                                    int eventID = data[byteCounter++];
+
+                                    Event e = new Event(eventName, description, eventID, (data[byteCounter] > 0));
+
+                                    contactingNode.AddEvent(e);
                                     break;
 
                                 default:

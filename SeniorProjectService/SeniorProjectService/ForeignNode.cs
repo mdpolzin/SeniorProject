@@ -32,9 +32,14 @@ namespace SeniorProjectService
             name = _name;
         }
 
+        /// <summary>
+        /// Adds an event to this Foreign Node's Event list. Only adds it to the list if the event ID does not already exist in the Event list.
+        /// </summary>
+        /// <param name="e">Event to add</param>
         public void AddEvent(Event e)
         {
-            events.Add(e);
+            if (!events.Any<Event>(exist => exist.ID == e.ID))
+                events.Add(e);
         }
 
         public ulong GetAddress()
@@ -42,9 +47,24 @@ namespace SeniorProjectService
             return address;
         }
 
+        public string GetAlias()
+        {
+            return alias;
+        }
+
+        public string GetBrand()
+        {
+            return brand;
+        }
+
         public string GetHexAddress()
         {
             return addressHexRepresentation;
+        }
+
+        public List<Event> GetEvents()
+        {
+            return events;
         }
 
         public string GetName()

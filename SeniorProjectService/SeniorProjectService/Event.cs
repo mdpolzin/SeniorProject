@@ -16,10 +16,11 @@ namespace SeniorProjectService
 
         private int id;
 
-        public Event(string _name, string _description, bool _triggerable)
+        public Event(string _name, string _description, int _id, bool _triggerable)
         {
             name = _name;
             description = _description;
+            id = _id;
             triggerable = _triggerable;
         }
 
@@ -33,14 +34,26 @@ namespace SeniorProjectService
             count = 0;
         }
 
+        public int Count
+        {
+            get { return this.count; }
+        }
+
+        public string Description
+        {
+            get { return description; }
+        }
+
         public int ID
         {
             set { this.id = value; }
             get { return this.id; }
         }
-        public int Count
+
+        public string Name
         {
-            get { return this.count; }
+            get { return name; }
         }
+        
     }
 }

@@ -1,12 +1,19 @@
-#include <XBee.h>s
+#include <XBee.h>
 
 //Below defines the byte values for received packet types
 #define PING_BYTE    0x00
 #define NAME_BYTE    0x01
 #define BRAND_BYTE   0X03
+#define EVENT_BYTE   0x05
 
 const char NAME[] = "Remote Arduino";
 const char BRAND[] = "MichaelCorp";
+
+/* Event 1 */
+char event1_name[] = "Event1";
+char event1_desc[] = "Description goes here";
+uint8_t event1_id = 1;
+uint8_t event1_trig = 1;
 
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -72,6 +79,7 @@ void HandleXbeePacket()
     switch(data[0])
     {
       case PING_BYTE:
+        //Send Name information followed by Brand information followed by Event information
         uint8_t payload1[sizeof(NAME) + 1];
         payload1[0] = NAME_BYTE;
         for(int i = 1 ; i < sizeof(payload1); i++)
@@ -82,6 +90,7 @@ void HandleXbeePacket()
         xbee.send(tx);
         AwaitConfirmation();
         
+        //Brand information
         uint8_t payload2[sizeof(BRAND) + 1];
         payload2[0] = BRAND_BYTE;
         for(int i = 1 ; i < sizeof(payload2); i++)
@@ -92,8 +101,27 @@ void HandleXbeePacket()
         xbee.send(tx);
         AwaitConfirmation();
         
-        break;
-      default:
+        //Event1 information
+        uint8_t payload3[sizeof(event1_name) + sizeof(event1_desc) + 5];
+        int byte_loc = 0;
+        payload3[byte_loc++] = EVENT_BYTE;
+        payload3[byte_loc++] = (uint8_t)sizeof(event1_name);
+        for(int i = 0; i < sizeof(event1_name); i++)
+        {
+          payload3[byte_loc++] = event1_name[i];
+        }
+        payload3[byte_loc++] = (uint8_t)sizeof(event1_desc);
+        for(int i = 0; i < sizeof(event1_desc); i++)
+        {
+          payload3[byte_loc++] = event1_desc[i];
+        }
+        payload3[byte_loc++] = event1_id;
+        payload3[byte_loc++] = event1_trig;
+        
+        tx = Tx64Request(addr64, payload3, sizeof(payload3));
+        xbee.send(tx);
+        AwaitConfirmation();
+        
         break;
     }
     

@@ -12,3 +12,4 @@ D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\b
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.Window.resources
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache
+D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.ConnectedNodesWindow.resources

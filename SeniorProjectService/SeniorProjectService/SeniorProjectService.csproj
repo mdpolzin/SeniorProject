@@ -47,6 +47,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConnectedNodesWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ConnectedNodesWindow.Designer.cs">
+      <DependentUpon>ConnectedNodesWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Event.cs" />
     <Compile Include="ForeignNode.cs" />
     <Compile Include="MenuControl.cs" />
@@ -65,6 +71,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="ConnectedNodesWindow.resx">
+      <DependentUpon>ConnectedNodesWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Window.resx">
       <DependentUpon>Window.cs</DependentUpon>
     </EmbeddedResource>

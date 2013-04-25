@@ -19,7 +19,7 @@ namespace SeniorProjectService
 
             foreach (ForeignNode addr in Service.remoteNodeList)
             {
-                source.Add(addr.GetName());
+                source.Add(addr.GetAlias());
             }
 
             ux_AddressDropDown.DataSource = source;
