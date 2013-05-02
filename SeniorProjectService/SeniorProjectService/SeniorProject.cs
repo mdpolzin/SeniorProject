@@ -231,7 +231,7 @@ namespace SeniorProjectService
 
                                 case OPTION_BYTE:
                                     byteCounter = 1;
-                                    
+
                                     int eventId = (ushort)(data[byteCounter++] << 8);
                                     eventId = (ushort)(eventId | data[byteCounter++]);
 
@@ -263,8 +263,33 @@ namespace SeniorProjectService
 
                                 case THROW_BYTE:
                                     byteCounter = 1;
-                                    if (contactingNode.GetRegistered())
-                                        contactingNode.ThrowEvent(data[byteCounter]);
+                                    if (!contactingNode.GetRegistered())
+                                    {
+                                        break;
+                                    }
+
+                                    int eventNum = (data[byteCounter++] << 7) | data[byteCounter++];
+                                    Event thisEvent = contactingNode.GetEvents().Single<Event>(temp => temp.ID == eventNum);
+                                    string op1Str = "";
+                                    string op2Str = "";
+
+                                    if (thisEvent.Option1)
+                                    {
+                                        int op1len = data[byteCounter++];
+                                        for (int i = 0; i < op1len; i++)
+                                        {
+                                            op1Str += (char)data[byteCounter++];
+                                        }
+                                    }
+                                    if (thisEvent.Option2)
+                                    {
+                                        int op2len = data[byteCounter++];
+                                        for (int i = 0; i < op2len; i++)
+                                        {
+                                            op2Str += (char)data[byteCounter++];
+                                        }
+                                    }
+                                    contactingNode.ThrowEvent(eventNum, op1Str, op2Str);
                                     break;
 
                                 default:

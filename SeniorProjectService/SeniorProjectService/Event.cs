@@ -84,6 +84,26 @@ namespace SeniorProjectService
             set { option2.exists = value; }
         }
 
+        public string GetOption1Description()
+        {
+            return option1.description;
+        }
+
+        public string GetOption2Description()
+        {
+            return option2.description;
+        }
+
+        public string GetOption1Value()
+        {
+            return option1.value;
+        }
+
+        public string GetOption2Value()
+        {
+            return option2.value;
+        }
+
         /// <summary>
         /// Set the parameters for the first option. Only possible if option 1 exists.
         /// </summary>
@@ -110,6 +130,16 @@ namespace SeniorProjectService
                 option2.description = desc;
                 option2.exists = true;
             }
+        }
+
+        public void SetOption1Value(string val)
+        {
+            option1.value = val;
+        }
+
+        public void SetOption2Value(string val)
+        {
+            option2.value = val;
         }
     }
 }

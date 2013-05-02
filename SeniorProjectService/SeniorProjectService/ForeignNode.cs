@@ -100,9 +100,13 @@ namespace SeniorProjectService
             registered = reg;
         }
 
-        public void ThrowEvent(int eventID)
+        public void ThrowEvent(int eventID, string op1, string op2)
         {
-            events.Single<Event>(e => e.ID == eventID).Throw();
+            Event e = events.Single<Event>(temp => temp.ID == eventID);
+            e.Throw();
+
+            e.SetOption1Value(op1);
+            e.SetOption2Value(op2);
         }
     }
 }
