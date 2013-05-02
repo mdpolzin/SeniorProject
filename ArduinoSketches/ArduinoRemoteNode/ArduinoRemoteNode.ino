@@ -1,16 +1,20 @@
 #include <XBee.h>
 
-//Below defines the byte values for received packet types
+//Below defines the byte values for all packet types
 #define PING_BYTE      0x00
 #define NAME_BYTE      0x01
-#define POWER_OFF_BYTE 0x02
+#define MISMATCH_BYTE  0x02
 #define BRAND_BYTE     0X03
+#define MATCH_BYTE     0x04
 #define EVENT_BYTE     0x05
+#define POWER_OFF_BYTE 0x06
 #define OPTION_BYTE    0x07
 #define THROW_BYTE     0x09
+#define VERSION_BYTE   0X0B
 
 const char NAME[] = "Remote Arduino";
 const char BRAND[] = "MichaelCorp";
+const uint8_t VERSION = 0x00;
 
 /* Event 1 */
 char event1_name[] = "Event1";
@@ -104,6 +108,19 @@ void HandleXbeePacket()
     switch(data[0])
     {
       case PING_BYTE:
+        uint8_t payload[2];
+        payload[0] = VERSION_BYTE;
+        payload[1] = VERSION;
+        
+        tx = Tx64Request(addr64, payload, sizeof(payload));
+        //tx.setFrameId(0);
+        xbee.send(tx);
+        AwaitConfirmation();
+        break;
+      case MATCH_BYTE:
+        registered = true;
+        break;
+      case MISMATCH_BYTE:
         //Send Name information followed by Brand information followed by Event information
         uint8_t payload1[sizeof(NAME) + 1];
         byte_loc = 0;
@@ -258,7 +275,7 @@ void ThrowEvent()
     if(random(2) > 0)
     {
       int byte_loc = 0;
-      String myString = String(analogRead(5));
+      String myString = String(analogRead(random(5)));
       Serial.println(myString);
       uint8_t  payload[myString.length() + 4];
       payload[byte_loc++] = THROW_BYTE;

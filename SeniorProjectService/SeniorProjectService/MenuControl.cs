@@ -22,9 +22,9 @@ namespace SeniorProjectService
         public static void SystemTrayIcon()
         {
             trayMenu = new ContextMenu();
-            trayMenu.MenuItems.Add("Send Message", OnSend);
             trayMenu.MenuItems.Add("Ping Nodes", OnPing);
             trayMenu.MenuItems.Add("Investigate Nodes", OnInvestigate);
+            trayMenu.MenuItems.Add("Audit/Update Node", OnAudit);
             trayMenu.MenuItems.Add("-");
             trayMenu.MenuItems.Add("Exit", OnExit);
 
@@ -35,6 +35,14 @@ namespace SeniorProjectService
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
             Application.Run();
+        }
+
+        private static void OnAudit(object sender, EventArgs e)
+        {
+            AuditNode an = new AuditNode();
+
+            an.WindowState = FormWindowState.Normal;
+            an.Visible = true;
         }
 
         private static void OnInvestigate(object sender, EventArgs e)
@@ -51,14 +59,6 @@ namespace SeniorProjectService
             data.Add(0x00);
             XbeeTx64Bit transmit = new XbeeTx64Bit(data);
             transmit.Send(Service._serialPort);
-        }
-
-        private static void OnSend(object sender, EventArgs e)
-        {
-            Window window = new Window();
-
-            window.WindowState = FormWindowState.Normal;
-            window.Visible = true;
         }
 
         private static void OnExit(object sender, EventArgs e)

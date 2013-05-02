@@ -17,11 +17,14 @@ namespace SeniorProjectService
     {
         public const byte PING_BYTE = 0x00;
         public const byte NAME_BYTE = 0x01;
-        public const byte POWER_OFF_BYTE = 0x02;
+        public const byte MISMATCH_BYTE = 0x02;
         public const byte BRAND_BYTE = 0X03;
+        public const byte MATCH_BYTE = 0x04;
         public const byte EVENT_BYTE = 0X05;
+        public const byte POWER_OFF_BYTE = 0x06;
         public const byte OPTION_BYTE = 0x07;
         public const byte THROW_BYTE = 0x09;
+        public const byte VERSION_BYTE = 0x0B;
 
         public static SerialPort _serialPort;
         public static bool _continue;
@@ -67,6 +70,11 @@ namespace SeniorProjectService
         {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream fs = new FileStream("ServiceInformation.dat", FileMode.OpenOrCreate);
+
+            foreach (ForeignNode fn in remoteNodeList)
+            {
+                fn.SetRegistered(false);
+            }
 
             try
             {
@@ -156,6 +164,25 @@ namespace SeniorProjectService
 
                             switch (data[0])
                             {
+                                case VERSION_BYTE:
+                                    int version = data[1];
+                                    XbeeTx64Bit transmit;
+                                    List<byte> d = new List<byte>();
+                                    if ((byte)version == contactingNode.GetVersion())
+                                    {
+                                        d.Add(MATCH_BYTE);
+                                        contactingNode.SetRegistered(true);
+                                    }
+                                    else
+                                    {
+                                        d.Add(MISMATCH_BYTE);
+                                        contactingNode.ResetNode();
+                                    }
+                                    contactingNode.SetVersion((byte)version);
+                                    transmit = new XbeeTx64Bit(d, contactingNode.GetAddress());
+                                    transmit.Send(_serialPort);
+                                    break;
+
                                 /* Responding to ping. Rest of message is the name of the unit. */
                                 case NAME_BYTE:
                                     string name = "";

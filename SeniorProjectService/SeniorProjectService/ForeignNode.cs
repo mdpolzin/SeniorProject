@@ -13,6 +13,7 @@ namespace SeniorProjectService
         string alias;
         string brand;
         ulong address;
+        byte version = 255;
         string addressHexRepresentation;
         List<Event> events = new List<Event>();
         bool registered = false;
@@ -80,6 +81,19 @@ namespace SeniorProjectService
             return registered;
         }
 
+        public byte GetVersion()
+        {
+            return version;
+        }
+
+        public void ResetNode()
+        {
+            name = "";
+            brand = "";
+            events = new List<Event>();
+            registered = false;
+        }
+
         public void SetAlias(string _alias)
         {
             alias = _alias;
@@ -98,6 +112,11 @@ namespace SeniorProjectService
         public void SetRegistered(bool reg)
         {
             registered = reg;
+        }
+
+        public void SetVersion(byte val)
+        {
+            version = val;
         }
 
         public void ThrowEvent(int eventID, string op1, string op2)
