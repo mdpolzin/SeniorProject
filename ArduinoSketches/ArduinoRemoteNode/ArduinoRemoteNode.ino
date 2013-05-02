@@ -1,11 +1,13 @@
 #include <XBee.h>
 
 //Below defines the byte values for received packet types
-#define PING_BYTE    0x00
-#define NAME_BYTE    0x01
-#define BRAND_BYTE   0X03
-#define EVENT_BYTE   0x05
-#define THROW_BYTE   0x07
+#define PING_BYTE      0x00
+#define NAME_BYTE      0x01
+#define POWER_OFF_BYTE 0x02
+#define BRAND_BYTE     0X03
+#define EVENT_BYTE     0x05
+#define OPTION_BYTE    0x07
+#define THROW_BYTE     0x09
 
 const char NAME[] = "Remote Arduino";
 const char BRAND[] = "MichaelCorp";
@@ -13,14 +15,19 @@ const char BRAND[] = "MichaelCorp";
 /* Event 1 */
 char event1_name[] = "Event1";
 char event1_desc[] = "Description goes here";
-uint8_t event1_id = 1;
+int event1_id = 1;
 uint8_t event1_trig = 1;
+uint8_t event1_op1 = 1;
+uint8_t event1_op2 = 0;
+char event1_op1_desc[] = "Integer";
 
 /* Event 2 */
 char event2_name[] = "Event2";
 char event2_desc[] = "This one can't be triggered";
-uint8_t event2_id = 2;
+int event2_id = 2;
 uint8_t event2_trig = 0;
+uint8_t event2_op1 = 0;
+uint8_t event2_op2 = 0;
 
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -87,6 +94,7 @@ void HandleXbeePacket()
   {
     // got a rx64bit packet
     Tx64Request tx;
+    int byte_loc = 0;
     
     xbee.getResponse().getRx64Response(rx64);
     addr64 = rx64.getRemoteAddress64();
@@ -98,29 +106,33 @@ void HandleXbeePacket()
       case PING_BYTE:
         //Send Name information followed by Brand information followed by Event information
         uint8_t payload1[sizeof(NAME) + 1];
-        payload1[0] = NAME_BYTE;
+        byte_loc = 0;
+        payload1[byte_loc++] = NAME_BYTE;
         for(int i = 1 ; i < sizeof(payload1); i++)
         {
-          payload1[i] = (uint8_t)NAME[i-1];
+          payload1[byte_loc++] = (uint8_t)NAME[i-1];
         }
         tx = Tx64Request(addr64, payload1, sizeof(payload1));
+        //tx.setFrameId(0);
         xbee.send(tx);
         AwaitConfirmation();
         
         //Brand information
         uint8_t payload2[sizeof(BRAND) + 1];
-        payload2[0] = BRAND_BYTE;
+        byte_loc = 0;
+        payload2[byte_loc++] = BRAND_BYTE;
         for(int i = 1 ; i < sizeof(payload2); i++)
         {
-          payload2[i] = (uint8_t)BRAND[i-1];
+          payload2[byte_loc++] = (uint8_t)BRAND[i-1];
         }
         tx = Tx64Request(addr64, payload2, sizeof(payload2));
+        //tx.setFrameId(0);
         xbee.send(tx);
         AwaitConfirmation();
         
         //Event1 information
         uint8_t payload3[sizeof(event1_name) + sizeof(event1_desc) + 5];
-        int byte_loc = 0;
+        byte_loc = 0;
         payload3[byte_loc++] = EVENT_BYTE;
         payload3[byte_loc++] = (uint8_t)sizeof(event1_name);
         for(int i = 0; i < sizeof(event1_name); i++)
@@ -132,10 +144,13 @@ void HandleXbeePacket()
         {
           payload3[byte_loc++] = event1_desc[i];
         }
-        payload3[byte_loc++] = event1_id;
-        payload3[byte_loc++] = event1_trig;
+        
+        payload3[byte_loc++] = (event1_trig << 7) | (event1_op1 << 3)
+                             | (event1_op2 << 2)  | ((event1_id & 0x300) >> 8);
+        payload3[byte_loc++] = event1_id & 0x00FF;
         
         tx = Tx64Request(addr64, payload3, sizeof(payload3));
+        //tx.setFrameId(0);
         xbee.send(tx);
         AwaitConfirmation();
         
@@ -153,15 +168,39 @@ void HandleXbeePacket()
         {
           payload4[byte_loc++] = event2_desc[i];
         }
-        payload4[byte_loc++] = event2_id;
-        payload4[byte_loc++] = event2_trig;
+        
+        payload4[byte_loc++] = (event2_trig << 7) | (event2_op1 << 3)
+                             | (event2_op2 << 2)  | ((event2_id & 0x300) >> 8);
+        payload4[byte_loc++] = event2_id & 0x00FF;
         
         tx = Tx64Request(addr64, payload4, sizeof(payload4));
+        //tx.setFrameId(0);
+        xbee.send(tx);
+        AwaitConfirmation();
+        
+        //Event1 Option1 information
+        uint8_t payload5[sizeof(event1_op1_desc) + 4];
+        byte_loc = 0;
+        payload5[byte_loc++] = OPTION_BYTE;
+        payload5[byte_loc++] = (event1_id & 0x300) >> 8;
+        payload5[byte_loc++] = event1_id & 0xFF;
+        payload5[byte_loc++] = (uint8_t)sizeof(event1_op1_desc);
+        for(int i = 0; i < sizeof(event1_op1_desc); i++)
+        {
+          payload5[byte_loc++] = event1_op1_desc[i];
+        }
+        
+        tx = Tx64Request(addr64, payload5, sizeof(payload5));
+        //tx.setFrameId(0);
         xbee.send(tx);
         AwaitConfirmation();
         
         registered = true;
         
+        break;
+      
+      case POWER_OFF_BYTE:
+        registered = false;
         break;
     }
   }
@@ -194,18 +233,14 @@ void AwaitConfirmation()
         else
         {
             // the remote XBee did not receive our packet. is it powered on?
-            flashLed(errorLed, 3, 500);
+            registered = false;
         }
     }
-  }
-  else if (xbee.getResponse().isError())
-  {
-    
   }
   else
   {
     // local XBee did not provide a timely TX Status Response.  Radio is not configured properly or connected
-    flashLed(errorLed, 2, 50);
+    registered = false;
   }
 }
 

@@ -63,6 +63,11 @@ namespace SeniorProjectService
 
         private static void OnExit(object sender, EventArgs e)
         {
+            List<byte> data = new List<byte>();
+            data.Add(Service.POWER_OFF_BYTE);
+            XbeeTx64Bit transmit = new XbeeTx64Bit(data);
+            transmit.Send(Service._serialPort);
+
             trayIcon.Dispose();
             Service._continue = false;
             Application.Exit();

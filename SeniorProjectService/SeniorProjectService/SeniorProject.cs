@@ -15,11 +15,13 @@ namespace SeniorProjectService
 {
     public class Service
     {
-        const byte PING_BYTE = 0x00;
-        const byte NAME_BYTE = 0x01;
-        const byte BRAND_BYTE = 0X03;
-        const byte EVENT_BYTE = 0X05;
-        const byte THROW_BYTE = 0x07;
+        public const byte PING_BYTE = 0x00;
+        public const byte NAME_BYTE = 0x01;
+        public const byte POWER_OFF_BYTE = 0x02;
+        public const byte BRAND_BYTE = 0X03;
+        public const byte EVENT_BYTE = 0X05;
+        public const byte OPTION_BYTE = 0x07;
+        public const byte THROW_BYTE = 0x09;
 
         public static SerialPort _serialPort;
         public static bool _continue;
@@ -211,11 +213,52 @@ namespace SeniorProjectService
                                         byteCounter++;
                                     }
 
-                                    int eventID = data[byteCounter++];
+                                    ushort doubleByte = (ushort)(data[byteCounter++] << 8);
+                                    doubleByte = (ushort)(doubleByte | data[byteCounter++]);
 
-                                    Event e = new Event(eventName, description, eventID, (data[byteCounter] > 0));
+                                    int eventID = doubleByte & 0x3FF;
+                                    bool triggerable = (doubleByte & 0x8000) > 0;
+                                    bool option1Exists = (doubleByte & 0x800) > 0;
+                                    bool option2Exists = (doubleByte & 0x400) > 0;
+
+                                    Event e = new Event(eventName, description, eventID, triggerable);
+
+                                    e.Option1 = option1Exists;
+                                    e.Option2 = option2Exists;
 
                                     contactingNode.AddEvent(e);
+                                    break;
+
+                                case OPTION_BYTE:
+                                    byteCounter = 1;
+                                    
+                                    int eventId = (ushort)(data[byteCounter++] << 8);
+                                    eventId = (ushort)(eventId | data[byteCounter++]);
+
+                                    int opDescLen = data[byteCounter++];
+                                    string opDescription = "";
+                                    for (int i = 0; i < opDescLen; i++)
+                                    {
+                                        if ((char)data[byteCounter] != '\0')
+                                            opDescription += (char)data[byteCounter];
+                                        byteCounter++;
+                                    }
+
+                                    Event currEvent = contactingNode.GetEvents().Single<Event>(c => c.ID == eventId);
+                                    currEvent.SetOption1(opDescription);
+
+                                    if (currEvent.Option2)
+                                    {
+                                        opDescLen = data[byteCounter++];
+                                        opDescription = "";
+                                        for (int i = 0; i < opDescLen; i++)
+                                        {
+                                            if ((char)data[byteCounter] != '\0')
+                                                opDescription += (char)data[byteCounter];
+                                            byteCounter++;
+                                        }
+                                    }
+
                                     break;
 
                                 case THROW_BYTE:
