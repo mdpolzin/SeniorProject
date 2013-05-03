@@ -59,15 +59,27 @@ namespace SeniorProjectService
             if (ux_NodeList.SelectedIndex < 0)
             {
                 ux_UpdateButton.Enabled = false;
+                ux_TriggerEvent.Enabled = false;
                 ux_NodeInfo.Text = "";
                 return;
             }
             ux_UpdateButton.Enabled = true;
+            ux_TriggerEvent.Enabled = true;
             ux_RenameNode.Text = "";
 
             ForeignNode fn = Service.remoteNodeList.Single<ForeignNode>(node => node.GetAlias() == ux_NodeList.SelectedItem.ToString());
 
             PopulateNodeInfo(fn);
+        }
+
+        private void ux_TriggerEvent_MouseClick(object sender, MouseEventArgs e)
+        {
+            ForeignNode fn = Service.remoteNodeList.Single<ForeignNode>(node => node.GetAlias() == ux_NodeList.SelectedItem.ToString());
+
+            EventWindow ew = new EventWindow(fn);
+
+            ew.WindowState = FormWindowState.Normal;
+            ew.Visible = true;
         }
 
         private void PopulateNodeInfo(ForeignNode fn)

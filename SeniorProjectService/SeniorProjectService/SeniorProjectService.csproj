@@ -60,6 +60,12 @@
       <DependentUpon>ConnectedNodesWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Event.cs" />
+    <Compile Include="EventWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EventWindow.Designer.cs">
+      <DependentUpon>EventWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="ForeignNode.cs" />
     <Compile Include="MenuControl.cs" />
     <Compile Include="FriendlyPortName.cs" />
@@ -76,6 +82,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ConnectedNodesWindow.resx">
       <DependentUpon>ConnectedNodesWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EventWindow.resx">
+      <DependentUpon>EventWindow.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

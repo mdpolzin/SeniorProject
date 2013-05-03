@@ -57,6 +57,11 @@ namespace SeniorProjectService
             get { return name; }
         }
 
+        public Boolean Triggerable
+        {
+            get { return triggerable; }
+        }
+
         [Serializable]
         internal struct Option
         {

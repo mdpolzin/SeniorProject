@@ -266,43 +266,55 @@ void ThrowEvent()
   if(!registered)
     return;
     
-  long randNum = random(10000);
+  long randNum = random(15000);
   
   if(randNum == 0)
   {
-    Tx64Request tx;
-    
     if(random(2) > 0)
     {
-      int byte_loc = 0;
-      String myString = String(analogRead(random(5)));
-      Serial.println(myString);
-      uint8_t  payload[myString.length() + 4];
-      payload[byte_loc++] = THROW_BYTE;
-      payload[byte_loc++] = (uint8_t)(event1_id & 0x300) >> 8;
-      payload[byte_loc++] = (uint8_t)(event1_id & 0xFF);
-
-      payload[byte_loc++] = myString.length();
-      
-      for(int i = 0; i < myString.length(); i++)
-      {
-        payload[byte_loc++] = (char)myString[i];
-      }
-      
-      tx = Tx64Request(addr64, payload, sizeof(payload));
-      xbee.send(tx);
-      AwaitConfirmation();
+      ThrowEvent1(analogRead(random(5)));
     }
     else
     {
-      uint8_t  payload[3];
-      payload[0] = THROW_BYTE;
-      payload[1] = (uint8_t)(event2_id & 0x300) >> 8;
-      payload[2] = (uint8_t)(event2_id & 0xFF);
-      
-      tx = Tx64Request(addr64, payload, sizeof(payload));
-      xbee.send(tx);
-      AwaitConfirmation();
+      ThrowEvent2();
     }
   }
+}
+
+void ThrowEvent1(int eventInt)
+{
+  Tx64Request tx;
+  
+  int byte_loc = 0;
+  String myString = String(eventInt);
+  
+  uint8_t  payload[myString.length() + 4];
+  payload[byte_loc++] = THROW_BYTE;
+  payload[byte_loc++] = (uint8_t)(event1_id & 0x300) >> 8;
+  payload[byte_loc++] = (uint8_t)(event1_id & 0xFF);
+
+  payload[byte_loc++] = myString.length();
+  
+  for(int i = 0; i < myString.length(); i++)
+  {
+    payload[byte_loc++] = (char)myString[i];
+  }
+  
+  tx = Tx64Request(addr64, payload, sizeof(payload));
+  xbee.send(tx);
+  AwaitConfirmation();
+}
+
+void ThrowEvent2()
+{
+  Tx64Request tx;
+  
+  uint8_t  payload[3];
+  payload[0] = THROW_BYTE;
+  payload[1] = (uint8_t)(event2_id & 0x300) >> 8;
+  payload[2] = (uint8_t)(event2_id & 0xFF);
+  
+  tx = Tx64Request(addr64, payload, sizeof(payload));
+  xbee.send(tx);
+  AwaitConfirmation();
 }

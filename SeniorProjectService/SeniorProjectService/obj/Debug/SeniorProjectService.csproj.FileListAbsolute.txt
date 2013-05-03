@@ -16,3 +16,4 @@ C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProje
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.AuditNode.resources
+D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources

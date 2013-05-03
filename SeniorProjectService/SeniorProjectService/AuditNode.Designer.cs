@@ -84,12 +84,14 @@
             // 
             // ux_TriggerEvent
             // 
+            this.ux_TriggerEvent.Enabled = false;
             this.ux_TriggerEvent.Location = new System.Drawing.Point(165, 304);
             this.ux_TriggerEvent.Name = "ux_TriggerEvent";
             this.ux_TriggerEvent.Size = new System.Drawing.Size(81, 23);
             this.ux_TriggerEvent.TabIndex = 5;
             this.ux_TriggerEvent.Text = "Trigger Event";
             this.ux_TriggerEvent.UseVisualStyleBackColor = true;
+            this.ux_TriggerEvent.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ux_TriggerEvent_MouseClick);
             // 
             // ux_NodeInfo
             // 
