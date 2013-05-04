@@ -23,6 +23,7 @@ namespace SeniorProjectService
         public const byte EVENT_BYTE = 0X05;
         public const byte POWER_OFF_BYTE = 0x06;
         public const byte OPTION_BYTE = 0x07;
+        public const byte TRIGGER_BYTE = 0x08;
         public const byte THROW_BYTE = 0x09;
         public const byte VERSION_BYTE = 0x0B;
 

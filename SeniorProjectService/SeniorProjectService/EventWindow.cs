@@ -79,6 +79,36 @@ namespace SeniorProjectService
 
                 return;
             }
+
+            List<byte> data = new List<byte>();
+
+            XbeeTx64Bit transmit;
+
+            data.Add(Service.TRIGGER_BYTE);
+            int ID = ev.ID;
+            byte id1 = (byte)((ID & 0x300) >> 8);
+            byte id2 = (byte)(ID & 0xFF);
+            data.Add(id1);
+            data.Add(id2);
+            if (ev.Option1)
+            {
+                data.Add((byte)ux_option1Input.Text.Length);
+                foreach (char c in ux_option1Input.Text)
+                {
+                    data.Add((byte)c);
+                }
+            }
+            if (ev.Option2)
+            {
+                data.Add((byte)ux_option2Input.Text.Length);
+                foreach (char c in ux_option2Input.Text)
+                {
+                    data.Add((byte)c);
+                }
+            }
+
+            transmit = new XbeeTx64Bit(data, node.GetAddress());
+            transmit.Send(Service._serialPort);
         }
 
         private void PopulateEventInfo(Event ev)

@@ -86,7 +86,11 @@ namespace SeniorProjectService
         public bool Option2
         {
             get { return option2.exists; }
-            set { option2.exists = value; }
+            set
+            {
+                if(!value || option1.exists)
+                    option2.exists = value; 
+            }
         }
 
         public string GetOption1Description()

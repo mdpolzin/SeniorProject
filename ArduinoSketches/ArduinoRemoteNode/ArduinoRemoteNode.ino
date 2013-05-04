@@ -9,6 +9,7 @@
 #define EVENT_BYTE     0x05
 #define POWER_OFF_BYTE 0x06
 #define OPTION_BYTE    0x07
+#define TRIGGER_BYTE   0x08
 #define THROW_BYTE     0x09
 #define VERSION_BYTE   0X0B
 
@@ -19,7 +20,7 @@ const uint8_t VERSION = 0x00;
 /* Event 1 */
 char event1_name[] = "Event1";
 char event1_desc[] = "Description goes here";
-int event1_id = 1;
+const int event1_id = 1;
 uint8_t event1_trig = 1;
 uint8_t event1_op1 = 1;
 uint8_t event1_op2 = 0;
@@ -28,7 +29,7 @@ char event1_op1_desc[] = "Integer";
 /* Event 2 */
 char event2_name[] = "Event2";
 char event2_desc[] = "This one can't be triggered";
-int event2_id = 2;
+const int event2_id = 2;
 uint8_t event2_trig = 0;
 uint8_t event2_op1 = 0;
 uint8_t event2_op2 = 0;
@@ -218,6 +219,39 @@ void HandleXbeePacket()
       
       case POWER_OFF_BYTE:
         registered = false;
+        break;
+      
+      case TRIGGER_BYTE:
+        byte_loc = 1;
+        int evID = data[byte_loc++];
+        evID = (evID << 7) | data[byte_loc++];
+        
+        switch(evID)
+        {
+          case event1_id:
+            if(event1_trig > 0)
+            {
+              int len = data[byte_loc++];
+              int integer = 1;
+              
+              for(int i = len-1; i >= 0; i--)
+              {
+                int cur = (int)data[byte_loc++];
+                if(cur < 48 || cur > 57)
+                  break;
+                cur -= 48;
+                integer += (cur * pow(10, i));
+              }
+              
+              ThrowEvent1(integer);
+            }
+            break;
+          
+          case event2_id:
+            if(event2_trig > 0)
+              ThrowEvent2();
+            break;
+        }
         break;
     }
   }
