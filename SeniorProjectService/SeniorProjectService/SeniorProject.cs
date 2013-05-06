@@ -220,18 +220,6 @@ namespace SeniorProjectService
                                     }
                                     contactingNode.SetName(name);
 
-                                    //If there is more than one of the same type of device, give each device a numbered alias as well to identify them
-                                    int count = 1;
-                                    foreach (ForeignNode fn in remoteNodeList)
-                                    {
-                                        if (fn == contactingNode)
-                                            continue;
-                                        if (fn.GetName() == contactingNode.GetName())
-                                        {
-                                            count++;
-                                        }
-                                    }
-                                    contactingNode.SetAlias(contactingNode.GetName() + count.ToString());
                                     contactingNode.SetRegistered(true);
                                     break;
 
@@ -470,10 +458,19 @@ namespace SeniorProjectService
                     contactingNode.GetAddress()));
 
                 contactingNode.SetNodeID(Convert.ToInt32(s.Split('\n')[0].Split('|')[0]));
+
+                contactingNode.SetAlias(contactingNode.GetName() + contactingNode.GetNodeID());
+
+                DataSqlConnection.CommandNonQuery(String.Format(
+                    "UPDATE nodes SET Alias = \"{0}\" WHERE ID = {1}",
+                    contactingNode.GetAlias(),
+                    contactingNode.GetNodeID()));
             }
             else
             {
                 contactingNode.SetNodeID(Convert.ToInt32(ret.Split('\n')[0].Split('|')[0]));
+
+                contactingNode.SetAlias(contactingNode.GetName() + contactingNode.GetNodeID());
 
                 DataSqlConnection.CommandNonQuery(String.Format(
                     "UPDATE nodes SET Name = \"{0}\", Alias = \"{1}\", Brand = \"{2}\", ForeignAddress = {3}, AddressHexRep = \"{4}\", Registered = 1, IsForeign = 1, Version = {5} WHERE ID = {6}",
