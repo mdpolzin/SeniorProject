@@ -101,6 +101,11 @@ namespace SeniorProjectService
             registered = false;
         }
 
+        public void SetAddress(ulong addr)
+        {
+            address = addr;
+        }
+
         public void SetAlias(string _alias)
         {
             alias = _alias;
@@ -109,6 +114,11 @@ namespace SeniorProjectService
         public void SetBrand(string _brand)
         {
             brand = _brand;
+        }
+
+        public void SetHexAddress(string hexAddr)
+        {
+            addressHexRepresentation = hexAddr;
         }
 
         public void SetName(string _name)

@@ -133,7 +133,7 @@ namespace SeniorProjectService
                                     }
                                     else
                                     {
-                                        int databaseVersion = Convert.ToInt32(ret.Split('\n')[0]);
+                                        int databaseVersion = Convert.ToInt32(ret.Split('\n')[0].Split('|')[0]);
 
                                         if (version != databaseVersion)
                                         {
@@ -148,7 +148,61 @@ namespace SeniorProjectService
                                         else
                                         {
                                             d.Add(MATCH_BYTE);
-                                            contactingNode.SetRegistered(true);
+                                            string node = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM nodes WHERE ForeignAddress = {0}", contactingNode.GetAddress())).Split('\n')[0];
+
+                                            string[] nodeInfo = node.Split('|');
+
+                                            contactingNode.SetNodeID(Convert.ToInt32(nodeInfo[0]));
+                                            contactingNode.SetName(nodeInfo[1]);
+                                            contactingNode.SetAlias(nodeInfo[2]);
+                                            contactingNode.SetBrand(nodeInfo[3]);
+                                            contactingNode.SetAddress(Convert.ToUInt64(nodeInfo[4]));
+                                            contactingNode.SetHexAddress(nodeInfo[5]);
+                                            contactingNode.SetRegistered(Convert.ToInt32(nodeInfo[6]) == 1);
+                                            //nodeInfo[7] is IsForeign which we don't care about
+                                            contactingNode.SetVersion(Convert.ToByte(nodeInfo[8]));
+
+                                            nodeInfo = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM events WHERE NodeId = {0}", contactingNode.GetNodeID())).Split('\n');
+                                            foreach (string s in nodeInfo)
+                                            {
+                                                if(s == "")
+                                                    continue;
+
+                                                string[] eventData = s.Split('|');
+
+                                                Event contactingEvent = new Event(eventData[2], eventData[3], Convert.ToInt32(eventData[1]), Convert.ToInt32(eventData[4]) == 1);
+
+                                                string optionsData = DataSqlConnection.CommandReturnLine(
+                                                    String.Format("SELECT * FROM options WHERE NodeID = {0} AND EventID = {1}",
+                                                    contactingNode.GetNodeID(),
+                                                    contactingEvent.ID));
+
+                                                if (optionsData == "")
+                                                {
+                                                    contactingEvent.Option1 = false;
+                                                    contactingEvent.Option2 = false;
+                                                }
+                                                else
+                                                {
+                                                    string[] ops = optionsData.Split('\n');
+                                                    string[] opsVals;
+
+                                                    opsVals = ops[0].Split('|');
+                                                    contactingEvent.Option1 = true;
+                                                    contactingEvent.SetOption1(opsVals[3]);
+                                                    contactingEvent.SetOption1Value(opsVals[4]);
+
+                                                    if (ops.Length == 3)
+                                                    {
+                                                        opsVals = ops[1].Split('|');
+                                                        contactingEvent.Option2 = true;
+                                                        contactingEvent.SetOption2(opsVals[3]);
+                                                        contactingEvent.SetOption2Value(opsVals[4]);
+                                                    }
+                                                }
+
+                                                contactingNode.AddEvent(contactingEvent);
+                                            }
                                         }
                                     }
                                     contactingNode.SetVersion((byte)version);
@@ -299,7 +353,10 @@ namespace SeniorProjectService
                                             op2Str += (char)data[byteCounter++];
                                         }
                                     }
+
                                     contactingNode.ThrowEvent(eventNum, op1Str, op2Str);
+
+                                    ThrowEvent(contactingNode, thisEvent, op1Str, op2Str);
                                     break;
 
                                 default:
@@ -310,6 +367,16 @@ namespace SeniorProjectService
                 }
                 catch (TimeoutException) { }
             }
+        }
+
+        private static void ThrowEvent(ForeignNode contactingNode, Event thisEvent, string op1Str, string op2Str)
+        {
+            DataSqlConnection.CommandNonQuery(String.Format(
+                "INSERT INTO messages_from_nodes (NodeID, EventID, Option1Val, Option2Val) VALUES({0}, {1}, \"{2}\", \"{3}\")",
+                contactingNode.GetNodeID(),
+                thisEvent.ID,
+                op1Str,
+                op2Str));
         }
 
         private static void AddOptionToDatabase(ForeignNode contactingNode, Event currEvent, int opNum, string opDescription)
@@ -402,11 +469,11 @@ namespace SeniorProjectService
                     "SELECT ID FROM nodes WHERE ForeignAddress = {0};",
                     contactingNode.GetAddress()));
 
-                contactingNode.SetNodeID(Convert.ToInt32(s.Split('\n')[0]));
+                contactingNode.SetNodeID(Convert.ToInt32(s.Split('\n')[0].Split('|')[0]));
             }
             else
             {
-                contactingNode.SetNodeID(Convert.ToInt32(ret.Split('\n')[0]));
+                contactingNode.SetNodeID(Convert.ToInt32(ret.Split('\n')[0].Split('|')[0]));
 
                 DataSqlConnection.CommandNonQuery(String.Format(
                     "UPDATE nodes SET Name = \"{0}\", Alias = \"{1}\", Brand = \"{2}\", ForeignAddress = {3}, AddressHexRep = \"{4}\", Registered = 1, IsForeign = 1, Version = {5} WHERE ID = {6}",
@@ -459,7 +526,7 @@ namespace SeniorProjectService
                 {
                     for (int i = 0; i < reader.VisibleFieldCount; i++)
                     {
-                        response += reader[i] + " ";
+                        response += reader[i] + "|";
                     }
                     response += "\n";
                 }
