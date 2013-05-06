@@ -18,6 +18,8 @@ namespace SeniorProjectService
         List<Event> events = new List<Event>();
         bool registered = false;
 
+        int nodeID;
+
         public ForeignNode(ulong _address)
         {
             address = _address;
@@ -76,6 +78,11 @@ namespace SeniorProjectService
             return name;
         }
 
+        public int GetNodeID()
+        {
+            return nodeID;
+        }
+
         public bool GetRegistered()
         {
             return registered;
@@ -107,6 +114,11 @@ namespace SeniorProjectService
         public void SetName(string _name)
         {
             name = _name;
+        }
+
+        public void SetNodeID(int node)
+        {
+            nodeID = node;
         }
 
         public void SetRegistered(bool reg)

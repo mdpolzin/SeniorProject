@@ -1,5 +1,8 @@
-﻿using System;
+﻿using MySql;
+using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
@@ -35,7 +38,7 @@ namespace SeniorProjectService
 
         public static void Main()
         {
-            DeserializeData();
+            DataSqlConnection.Connect();
             StringComparer stringComparer = StringComparer.OrdinalIgnoreCase;
             Thread readThread = new Thread(Read);
             Thread sysTrayThread = new Thread(MenuControl.SystemTrayIcon);
@@ -64,56 +67,7 @@ namespace SeniorProjectService
             readThread.Join();
             _serialPort.Close();
 
-            SerializeData();
-        }
-
-        private static void SerializeData()
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream fs = new FileStream("ServiceInformation.dat", FileMode.OpenOrCreate);
-
-            foreach (ForeignNode fn in remoteNodeList)
-            {
-                fn.SetRegistered(false);
-            }
-
-            try
-            {
-                bf.Serialize(fs, remoteNodeList);
-            }
-            finally
-            {
-                fs.Close();
-            }
-        }
-
-        private static void DeserializeData()
-        {
-            if (File.Exists("ServiceInformation.dat"))
-            {
-                BinaryFormatter bf = new BinaryFormatter();
-                FileStream fs = new FileStream("ServiceInformation.dat", FileMode.Open);
-
-                try
-                {
-                    // Deserialize the hashtable from the file and  
-                    // assign the reference to the local variable.
-                    remoteNodeList = (HashSet<ForeignNode>)bf.Deserialize(fs);
-                }
-                catch (SerializationException)
-                {
-                    remoteNodeList = new HashSet<ForeignNode>();
-                    remoteNodeList.Add(BROADCAST);
-                }
-                finally
-                {
-                    fs.Close();
-                }
-            }
-            else
-            {
-                remoteNodeList.Add(BROADCAST);
-            }
+            DataSqlConnection.Close();
         }
 
         public static string SetPortName(string defaultPortName)
@@ -169,15 +123,33 @@ namespace SeniorProjectService
                                     int version = data[1];
                                     XbeeTx64Bit transmit;
                                     List<byte> d = new List<byte>();
-                                    if ((byte)version == contactingNode.GetVersion())
-                                    {
-                                        d.Add(MATCH_BYTE);
-                                        contactingNode.SetRegistered(true);
-                                    }
-                                    else
+
+                                    string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT Version FROM nodes WHERE ForeignAddress = {0}", contactingNode.GetAddress()));
+
+                                    if (ret == "")
                                     {
                                         d.Add(MISMATCH_BYTE);
                                         contactingNode.ResetNode();
+                                    }
+                                    else
+                                    {
+                                        int databaseVersion = Convert.ToInt32(ret.Split('\n')[0]);
+
+                                        if (version != databaseVersion)
+                                        {
+                                            d.Add(MISMATCH_BYTE);
+                                            contactingNode.ResetNode();
+
+                                            DataSqlConnection.CommandNonQuery(String.Format(
+                                                "UPDATE nodes SET Version = {0} WHERE ForeignAddress = {1}",
+                                                version,
+                                                contactingNode.GetAddress()));
+                                        }
+                                        else
+                                        {
+                                            d.Add(MATCH_BYTE);
+                                            contactingNode.SetRegistered(true);
+                                        }
                                     }
                                     contactingNode.SetVersion((byte)version);
                                     transmit = new XbeeTx64Bit(d, contactingNode.GetAddress());
@@ -218,6 +190,9 @@ namespace SeniorProjectService
                                             brand += (char)data[i];
                                     }
                                     contactingNode.SetBrand(brand);
+
+                                    AddNodeToDatabase(contactingNode);
+
                                     break;
 
                                 /* Responding to ping. Rest of message is a distinct Event. */
@@ -255,6 +230,9 @@ namespace SeniorProjectService
                                     e.Option2 = option2Exists;
 
                                     contactingNode.AddEvent(e);
+
+                                    AddEventToDatabase(contactingNode, e);
+
                                     break;
 
                                 case OPTION_BYTE:
@@ -275,6 +253,8 @@ namespace SeniorProjectService
                                     Event currEvent = contactingNode.GetEvents().Single<Event>(c => c.ID == eventId);
                                     currEvent.SetOption1(opDescription);
 
+                                    AddOptionToDatabase(contactingNode, currEvent, 1, opDescription);
+
                                     if (currEvent.Option2)
                                     {
                                         opDescLen = data[byteCounter++];
@@ -285,8 +265,10 @@ namespace SeniorProjectService
                                                 opDescription += (char)data[byteCounter];
                                             byteCounter++;
                                         }
-                                    }
 
+                                        AddOptionToDatabase(contactingNode, currEvent, 1, opDescription);
+                                    }
+                                    
                                     break;
 
                                 case THROW_BYTE:
@@ -328,6 +310,171 @@ namespace SeniorProjectService
                 }
                 catch (TimeoutException) { }
             }
+        }
+
+        private static void AddOptionToDatabase(ForeignNode contactingNode, Event currEvent, int opNum, string opDescription)
+        {
+            string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM options WHERE NodeId = {0} AND EventId = {1} AND OptionNum = {2};",
+                contactingNode.GetNodeID(),
+                currEvent.ID,
+                opNum));
+
+            string query;
+
+            if (ret == "")
+            {
+                query = String.Format(
+                    "INSERT INTO options VALUES({0}, {1}, {2}, \"{3}\", null)",
+                    contactingNode.GetNodeID(),
+                    currEvent.ID,
+                    opNum,
+                    opDescription);
+            }
+            else
+            {
+                query = String.Format(
+                    "UPDATE options SET Description = \"{3}\" Value = null WHERE NodeID = {0} AND EventID = {1} AND OptionNum = {2}",
+                    contactingNode.GetNodeID(),
+                    currEvent.ID,
+                    opNum,
+                    opDescription);
+            }
+
+            DataSqlConnection.CommandNonQuery(query);
+
+            
+        }
+
+        private static void AddEventToDatabase(ForeignNode contactingNode, Event e)
+        {
+            string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM events WHERE NodeId = {0} AND EventId = {1};",
+                contactingNode.GetNodeID(),
+                e.ID));
+
+            string query;
+
+            int t = 0;
+            if (e.Triggerable)
+                t = 1;
+
+            if (ret == "")
+            {
+                query = String.Format(
+                "INSERT INTO events VALUES({0}, {1}, \"{2}\", \"{3}\", {4}, 0)",
+                contactingNode.GetNodeID(),
+                e.ID,
+                e.Name,
+                e.Description,
+                t);
+            }
+            else
+            {
+                query = String.Format(
+                "UPDATE events SET Name = \"{0}\", Description = \"{1}\", Triggerable = {2}, Count = 0 WHERE NodeId = \"{3}\" AND EventId = \"{4}\"",
+                e.Name,
+                e.Description,
+                t,
+                contactingNode.GetNodeID(),
+                e.ID);
+            }
+            
+
+            DataSqlConnection.CommandNonQuery(query);
+        }
+
+        private static void AddNodeToDatabase(ForeignNode contactingNode)
+        {
+            string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT ID FROM nodes WHERE ForeignAddress = {0};", contactingNode.GetAddress()));
+
+            if (ret == "")
+            {
+                DataSqlConnection.CommandNonQuery(String.Format(
+                    "INSERT INTO nodes (Name, Alias, Brand, ForeignAddress, AddressHexRep, Registered, IsForeign, Version) " +
+                    "VALUES(\"{0}\", \"{1}\", \"{2}\", {3}, \"{4}\", 1, 1, {5})",
+                    contactingNode.GetName(),
+                    contactingNode.GetAlias(),
+                    contactingNode.GetBrand(),
+                    contactingNode.GetAddress(),
+                    contactingNode.GetHexAddress(),
+                    contactingNode.GetVersion()));
+
+                string s = DataSqlConnection.CommandReturnLine(String.Format(
+                    "SELECT ID FROM nodes WHERE ForeignAddress = {0};",
+                    contactingNode.GetAddress()));
+
+                contactingNode.SetNodeID(Convert.ToInt32(s.Split('\n')[0]));
+            }
+            else
+            {
+                contactingNode.SetNodeID(Convert.ToInt32(ret.Split('\n')[0]));
+
+                DataSqlConnection.CommandNonQuery(String.Format(
+                    "UPDATE nodes SET Name = \"{0}\", Alias = \"{1}\", Brand = \"{2}\", ForeignAddress = {3}, AddressHexRep = \"{4}\", Registered = 1, IsForeign = 1, Version = {5} WHERE ID = {6}",
+                    contactingNode.GetName(),
+                    contactingNode.GetAlias(),
+                    contactingNode.GetBrand(),
+                    contactingNode.GetAddress(),
+                    contactingNode.GetHexAddress(),
+                    contactingNode.GetVersion(),
+                    contactingNode.GetNodeID()));
+            }
+        }
+    }
+
+    public class DataSqlConnection
+    {
+        private static bool connected = false;
+        public static MySqlConnection thisConnection;
+
+        public static void Connect()
+        {
+            try
+            {
+                thisConnection = new MySqlConnection(@"server = 127.0.0.1; database = SeniorProject; uid = root; pwd = Cpgkzxa3");
+                thisConnection.Open();
+                connected = true;
+            }
+            catch (SqlException) { }
+        }
+
+        public static void CommandNonQuery(string query)
+        {
+            if (connected)
+            {
+                MySqlCommand command = thisConnection.CreateCommand();
+                command.CommandText = query;
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public static string CommandReturnLine(string query)
+        {
+            if(connected)
+            {
+                string response = "";
+                MySqlCommand command = thisConnection.CreateCommand();
+                command.CommandText = query;
+                MySqlDataReader reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    for (int i = 0; i < reader.VisibleFieldCount; i++)
+                    {
+                        response += reader[i] + " ";
+                    }
+                    response += "\n";
+                }
+
+                reader.Close();
+
+                return response;
+            }
+
+            return "";
+        }
+
+        public static void Close()
+        {
+            thisConnection.Close();
         }
     }
 }
