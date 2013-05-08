@@ -12,8 +12,9 @@ D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\o
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.ConnectedNodesWindow.resources
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.ConnectedNodesWindow.resources
-C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.Window.resources
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.AuditNode.resources
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.AuditNode.resources
+C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources

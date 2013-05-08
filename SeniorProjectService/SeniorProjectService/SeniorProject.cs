@@ -38,11 +38,16 @@ namespace SeniorProjectService
 
         public static void Main()
         {
+            _continue = true;
+            DataSqlConnection.mutex.WaitOne();
             DataSqlConnection.Connect();
+            DataSqlConnection.mutex.ReleaseMutex();
             StringComparer stringComparer = StringComparer.OrdinalIgnoreCase;
             Thread readThread = new Thread(Read);
             Thread sysTrayThread = new Thread(MenuControl.SystemTrayIcon);
+            Thread consumeThread = new Thread(Consume);
 
+            consumeThread.Start();
             sysTrayThread.Start();
 
             // Create a new SerialPort object with default settings.
@@ -60,14 +65,18 @@ namespace SeniorProjectService
             _serialPort.Open();
             _serialPort.DtrEnable = true;
             _serialPort.RtsEnable = true;
-            _continue = true;
             readThread.Start();
 
             sysTrayThread.Join();
             readThread.Join();
+            consumeThread.Join();
             _serialPort.Close();
 
+            DataSqlConnection.mutex.WaitOne();
+            DataSqlConnection.CommandNonQuery("UPDATE nodes SET Registered=0");
+
             DataSqlConnection.Close();
+            DataSqlConnection.mutex.ReleaseMutex();
         }
 
         public static string SetPortName(string defaultPortName)
@@ -90,6 +99,87 @@ namespace SeniorProjectService
             return portName;
         }
 
+        public static void Consume()
+        {
+            while (_continue)
+            {
+                DataSqlConnection.mutex.WaitOne();
+                string msgs = DataSqlConnection.CommandReturnLine(String.Format(
+                    "SELECT * FROM messages_to_nodes"));
+                DataSqlConnection.mutex.ReleaseMutex();
+
+                if (msgs != "")
+                {
+                    string[] msgsArr = msgs.Split('\n');
+                    foreach (string msg in msgsArr)
+                    {
+                        if (msg == "")
+                            continue;
+
+                        string[] msgData = msg.Split('|');
+                        int NodeID = Convert.ToInt32(msgData[0]);
+                        int EventID = Convert.ToInt32(msgData[1]);
+                        string op1 = msgData[2];
+                        string op2 = msgData[3];
+                        int MsgID = Convert.ToInt32(msgData[4]);
+
+                        XbeeTx64Bit transmit;
+
+                        DataSqlConnection.mutex.WaitOne();
+                        string ret = DataSqlConnection.CommandReturnLine(String.Format(
+                            "SELECT ForeignAddress, Registered FROM nodes WHERE ID = {0};",
+                            NodeID));
+                        DataSqlConnection.mutex.ReleaseMutex();
+
+                        if (ret == "")
+                            continue;
+
+                        DataSqlConnection.mutex.WaitOne();
+                        DataSqlConnection.CommandNonQuery(String.Format(
+                            "DELETE FROM messages_to_nodes WHERE MessageID={0}",
+                            MsgID));
+                        DataSqlConnection.mutex.ReleaseMutex();
+
+                        string forAddr = ret.Split('|')[0];
+                        string reg = ret.Split('|')[1];
+
+                        if (reg != "1")
+                            continue;
+
+                        ulong addr = Convert.ToUInt64(forAddr);
+
+                        List<byte> data = new List<byte>();
+                        data.Add(TRIGGER_BYTE);
+                        byte id1 = (byte)((EventID & 0x300) >> 8);
+                        byte id2 = (byte)(EventID & 0xFF);
+                        data.Add(id1);
+                        data.Add(id2);
+
+                        if (op1 != "")
+                        {
+                            data.Add((byte)op1.Length);
+                            foreach (char c in op1)
+                            {
+                                data.Add((byte)c);
+                            }
+                        }
+                        if (op2 != "")
+                        {
+                            data.Add((byte)op2.Length);
+                            foreach (char c in op2)
+                            {
+                                data.Add((byte)c);
+                            }
+                        }
+
+                        transmit = new XbeeTx64Bit(data, addr);
+                        transmit.Send(_serialPort);
+                    }
+                }
+
+                Thread.Sleep(250);
+            }
+        }
 
         /// <summary>
         /// Reads from a separate thread
@@ -124,8 +214,11 @@ namespace SeniorProjectService
                                     XbeeTx64Bit transmit;
                                     List<byte> d = new List<byte>();
 
-                                    string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT Version FROM nodes WHERE ForeignAddress = {0}", contactingNode.GetAddress()));
-
+                                    DataSqlConnection.mutex.WaitOne();
+                                    string ret = DataSqlConnection.CommandReturnLine(String.Format(
+                                        "SELECT Version FROM nodes WHERE ForeignAddress = {0}",
+                                        contactingNode.GetAddress()));
+                                    DataSqlConnection.mutex.ReleaseMutex();
                                     if (ret == "")
                                     {
                                         d.Add(MISMATCH_BYTE);
@@ -140,15 +233,25 @@ namespace SeniorProjectService
                                             d.Add(MISMATCH_BYTE);
                                             contactingNode.ResetNode();
 
+                                            DataSqlConnection.mutex.WaitOne();
                                             DataSqlConnection.CommandNonQuery(String.Format(
                                                 "UPDATE nodes SET Version = {0} WHERE ForeignAddress = {1}",
                                                 version,
                                                 contactingNode.GetAddress()));
+                                            DataSqlConnection.mutex.ReleaseMutex();
                                         }
                                         else
                                         {
+                                            DataSqlConnection.mutex.WaitOne();
+                                            DataSqlConnection.CommandNonQuery(String.Format(
+                                                "UPDATE nodes SET Registered = 1 WHERE ForeignAddress = {0}",
+                                                contactingNode.GetAddress()));
+
                                             d.Add(MATCH_BYTE);
-                                            string node = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM nodes WHERE ForeignAddress = {0}", contactingNode.GetAddress())).Split('\n')[0];
+                                            string node = DataSqlConnection.CommandReturnLine(String.Format(
+                                                "SELECT * FROM nodes WHERE ForeignAddress = {0}",
+                                                contactingNode.GetAddress())).Split('\n')[0];
+                                            DataSqlConnection.mutex.ReleaseMutex();
 
                                             string[] nodeInfo = node.Split('|');
 
@@ -158,11 +261,16 @@ namespace SeniorProjectService
                                             contactingNode.SetBrand(nodeInfo[3]);
                                             contactingNode.SetAddress(Convert.ToUInt64(nodeInfo[4]));
                                             contactingNode.SetHexAddress(nodeInfo[5]);
-                                            contactingNode.SetRegistered(Convert.ToInt32(nodeInfo[6]) == 1);
+                                            contactingNode.SetRegistered(true);
                                             //nodeInfo[7] is IsForeign which we don't care about
                                             contactingNode.SetVersion(Convert.ToByte(nodeInfo[8]));
 
-                                            nodeInfo = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM events WHERE NodeId = {0}", contactingNode.GetNodeID())).Split('\n');
+                                            DataSqlConnection.mutex.WaitOne();
+                                            nodeInfo = DataSqlConnection.CommandReturnLine(String.Format(
+                                                "SELECT * FROM events WHERE NodeId = {0}",
+                                                contactingNode.GetNodeID())).Split('\n');
+                                            DataSqlConnection.mutex.ReleaseMutex();
+
                                             foreach (string s in nodeInfo)
                                             {
                                                 if(s == "")
@@ -172,10 +280,12 @@ namespace SeniorProjectService
 
                                                 Event contactingEvent = new Event(eventData[2], eventData[3], Convert.ToInt32(eventData[1]), Convert.ToInt32(eventData[4]) == 1);
 
+                                                DataSqlConnection.mutex.WaitOne();
                                                 string optionsData = DataSqlConnection.CommandReturnLine(
                                                     String.Format("SELECT * FROM options WHERE NodeID = {0} AND EventID = {1}",
                                                     contactingNode.GetNodeID(),
                                                     contactingEvent.ID));
+                                                DataSqlConnection.mutex.ReleaseMutex();
 
                                                 if (optionsData == "")
                                                 {
@@ -359,16 +469,126 @@ namespace SeniorProjectService
 
         private static void ThrowEvent(ForeignNode contactingNode, Event thisEvent, string op1Str, string op2Str)
         {
+            DataSqlConnection.mutex.WaitOne();
             DataSqlConnection.CommandNonQuery(String.Format(
                 "INSERT INTO messages_from_nodes (NodeID, EventID, Option1Val, Option2Val) VALUES({0}, {1}, \"{2}\", \"{3}\")",
                 contactingNode.GetNodeID(),
                 thisEvent.ID,
                 op1Str,
                 op2Str));
+
+            DataSqlConnection.CommandNonQuery(String.Format(
+                "UPDATE events SET Count=Count+1 WHERE NodeID={0} AND EventID={1}",
+                contactingNode.GetNodeID(),
+                thisEvent.ID));
+
+            if (op1Str != "")
+            {
+                DataSqlConnection.CommandNonQuery(String.Format(
+                    "UPDATE options SET Value=\"{0}\" WHERE NodeID={1} AND EventID={2} AND OptionNum=1",
+                    op1Str,
+                    contactingNode.GetNodeID(),
+                    thisEvent.ID));
+            }
+            if (op2Str != "")
+            {
+                DataSqlConnection.CommandNonQuery(String.Format(
+                    "UPDATE options SET Value=\"{0}\" WHERE NodeID={1} AND EventID={2} AND OptionNum=2",
+                    op2Str,
+                    contactingNode.GetNodeID(),
+                    thisEvent.ID));
+            }
+
+            string chainData = DataSqlConnection.CommandReturnLine(String.Format(
+                "SELECT ThrowNodeID, ThrowEventID, ThrowOp1, ThrowOp2, ThrowRemaining FROM event_chains WHERE TriggerNodeID = {0} AND TriggerEventID = {1}",
+                contactingNode.GetNodeID(),
+                thisEvent.ID));
+
+            if (chainData != "")
+            {
+                string[] chainInfo = chainData.Split('\n');
+                foreach (string thisChain in chainInfo)
+                {
+                    if (thisChain == "")
+                        continue;
+                    string[] chain = thisChain.Split('|');
+                    int throwNodeID = Convert.ToInt32(chain[0]);
+                    int throwEventID = Convert.ToInt32(chain[1]);
+                    string throwOp1 = chain[2];
+                    string throwOp2 = chain[3];
+                    int throwRemaining = Convert.ToInt32(chain[4]);
+
+                    if (throwRemaining == 1)
+                    {
+                        DataSqlConnection.CommandNonQuery(String.Format(
+                            "DELETE FROM event_chains WHERE TriggerNodeID={0} AND TriggerEventID={1} AND ThrowNodeID={2} AND ThrowEventID={3}",
+                            contactingNode.GetNodeID(),
+                            thisEvent.ID,
+                            throwNodeID,
+                            throwEventID));
+                    }
+                    else if (throwRemaining > 1)
+                    {
+                        DataSqlConnection.CommandNonQuery(String.Format(
+                            "UPDATE event_chains SET ThrowRemaining = ThrowRemaining - 1 WHERE TriggerNodeID={0} AND TriggerEventID={1} AND ThrowNodeID={2} AND ThrowEventID={3}",
+                            contactingNode.GetNodeID(),
+                            thisEvent.ID,
+                            throwNodeID,
+                            throwEventID));
+                    }
+
+                    string ret = DataSqlConnection.CommandReturnLine(String.Format(
+                        "SELECT ForeignAddress, Registered FROM nodes WHERE ID = {0};",
+                        throwNodeID));
+
+                    if (ret != "")
+                    {
+                        XbeeTx64Bit transmit;
+
+                        string forAddr = ret.Split('|')[0];
+                        string reg = ret.Split('|')[1];
+
+                        if (reg != "1")
+                            continue;
+
+                        ulong addr = Convert.ToUInt64(forAddr);
+
+                        List<byte> data = new List<byte>();
+                        data.Add(TRIGGER_BYTE);
+                        byte id1 = (byte)((throwEventID & 0x300) >> 8);
+                        byte id2 = (byte)(throwEventID & 0xFF);
+                        data.Add(id1);
+                        data.Add(id2);
+
+                        if (throwOp1 != "")
+                        {
+                            data.Add((byte)throwOp1.Length);
+                            foreach (char c in throwOp1)
+                            {
+                                data.Add((byte)c);
+                            }
+                        }
+                        if (throwOp2 != "")
+                        {
+                            data.Add((byte)throwOp2.Length);
+                            foreach (char c in throwOp2)
+                            {
+                                data.Add((byte)c);
+                            }
+                        }
+
+                        transmit = new XbeeTx64Bit(data, addr);
+                        transmit.Send(_serialPort);
+                    }
+                }
+            }
+
+            DataSqlConnection.mutex.ReleaseMutex();
         }
 
         private static void AddOptionToDatabase(ForeignNode contactingNode, Event currEvent, int opNum, string opDescription)
         {
+            DataSqlConnection.mutex.WaitOne();
             string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM options WHERE NodeId = {0} AND EventId = {1} AND OptionNum = {2};",
                 contactingNode.GetNodeID(),
                 currEvent.ID,
@@ -388,7 +608,7 @@ namespace SeniorProjectService
             else
             {
                 query = String.Format(
-                    "UPDATE options SET Description = \"{3}\" Value = null WHERE NodeID = {0} AND EventID = {1} AND OptionNum = {2}",
+                    "UPDATE options SET Description = \"{3}\", Value = \"\" WHERE NodeID = {0} AND EventID = {1} AND OptionNum = {2}",
                     contactingNode.GetNodeID(),
                     currEvent.ID,
                     opNum,
@@ -396,12 +616,12 @@ namespace SeniorProjectService
             }
 
             DataSqlConnection.CommandNonQuery(query);
-
-            
+            DataSqlConnection.mutex.ReleaseMutex();
         }
 
         private static void AddEventToDatabase(ForeignNode contactingNode, Event e)
         {
+            DataSqlConnection.mutex.WaitOne();
             string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT * FROM events WHERE NodeId = {0} AND EventId = {1};",
                 contactingNode.GetNodeID(),
                 e.ID));
@@ -432,13 +652,14 @@ namespace SeniorProjectService
                 contactingNode.GetNodeID(),
                 e.ID);
             }
-            
 
             DataSqlConnection.CommandNonQuery(query);
+            DataSqlConnection.mutex.ReleaseMutex();
         }
 
         private static void AddNodeToDatabase(ForeignNode contactingNode)
         {
+            DataSqlConnection.mutex.WaitOne();
             string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT ID FROM nodes WHERE ForeignAddress = {0};", contactingNode.GetAddress()));
 
             if (ret == "")
@@ -462,7 +683,7 @@ namespace SeniorProjectService
                 contactingNode.SetAlias(contactingNode.GetName() + contactingNode.GetNodeID());
 
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "UPDATE nodes SET Alias = \"{0}\" WHERE ID = {1}",
+                    "UPDATE nodes SET Alias = \"{0}\", Registered = '1' WHERE ID = {1}",
                     contactingNode.GetAlias(),
                     contactingNode.GetNodeID()));
             }
@@ -482,6 +703,7 @@ namespace SeniorProjectService
                     contactingNode.GetVersion(),
                     contactingNode.GetNodeID()));
             }
+            DataSqlConnection.mutex.ReleaseMutex();
         }
     }
 
@@ -489,6 +711,7 @@ namespace SeniorProjectService
     {
         private static bool connected = false;
         public static MySqlConnection thisConnection;
+        public static Mutex mutex = new Mutex();
 
         public static void Connect()
         {
