@@ -15,7 +15,7 @@
 
 const char NAME[] = "Remote Arduino";
 const char BRAND[] = "MichaelCorp";
-const uint8_t VERSION = 0x00;
+const uint8_t VERSION = 0x04;
 
 /* Event 1 */
 char event1_name[] = "Event1";
@@ -34,39 +34,30 @@ uint8_t event2_trig = 0;
 uint8_t event2_op1 = 0;
 uint8_t event2_op2 = 0;
 
+/* Toggle Light */
+char event3_name[] = "Toggle Light";
+char event3_desc[] = "Toggle the light on or off";
+const int event3_id = 3;
+uint8_t event3_trig = 1;
+uint8_t event3_op1 = 0;
+uint8_t event3_op2 = 0;
+
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 Rx64Response rx64 = Rx64Response();
 XBeeAddress64 addr64;
 
-int statusLed = 11;
-int errorLed = 12;
-int dataLed = 10;
+int ledPin = 13;
+int currentLedStatus = LOW;
 
 uint8_t option = 0;
 uint8_t* data = 0;
 
 bool registered;
 
-void flashLed(int pin, int times, int wait)
-{    
-  for (int i = 0; i < times; i++)
-  {
-    digitalWrite(pin, HIGH);
-    delay(wait);
-    digitalWrite(pin, LOW);
-    
-    if (i + 1 < times)
-    {
-      delay(wait);
-    }
-  }
-}
-
-void setup() {
-  pinMode(statusLed, OUTPUT);
-  pinMode(errorLed, OUTPUT);
-  pinMode(dataLed,  OUTPUT);
+void setup()
+{
+  pinMode(ledPin, OUTPUT);
   
   randomSeed(analogRead(5));
   
@@ -75,8 +66,6 @@ void setup() {
   // start serial
   Serial.begin(9600);
   xbee.setSerial(Serial);
-  
-  flashLed(statusLed, 3, 50);
 }
 
 // continuously reads packets, looking for RX64
@@ -196,19 +185,43 @@ void HandleXbeePacket()
         xbee.send(tx);
         AwaitConfirmation();
         
-        //Event1 Option1 information
-        uint8_t payload5[sizeof(event1_op1_desc) + 4];
+        //ToggleLight Event information
+        uint8_t payload5[sizeof(event3_name) + sizeof(event3_desc) + 5];
         byte_loc = 0;
-        payload5[byte_loc++] = OPTION_BYTE;
-        payload5[byte_loc++] = (event1_id & 0x300) >> 8;
-        payload5[byte_loc++] = event1_id & 0xFF;
-        payload5[byte_loc++] = (uint8_t)sizeof(event1_op1_desc);
-        for(int i = 0; i < sizeof(event1_op1_desc); i++)
+        payload5[byte_loc++] = EVENT_BYTE;
+        payload5[byte_loc++] = (uint8_t)sizeof(event3_name);
+        for(int i = 0; i < sizeof(event3_name); i++)
         {
-          payload5[byte_loc++] = event1_op1_desc[i];
+          payload5[byte_loc++] = event3_name[i];
+        }
+        payload5[byte_loc++] = (uint8_t)sizeof(event3_desc);
+        for(int i = 0; i < sizeof(event3_desc); i++)
+        {
+          payload5[byte_loc++] = event3_desc[i];
         }
         
+        payload5[byte_loc++] = (event3_trig << 7) | (event3_op1 << 3)
+                             | (event3_op2 << 2)  | ((event3_id & 0x300) >> 8);
+        payload5[byte_loc++] = event3_id & 0x00FF;
+        
         tx = Tx64Request(addr64, payload5, sizeof(payload5));
+        //tx.setFrameId(0);
+        xbee.send(tx);
+        AwaitConfirmation();
+        
+        //Event1 Option1 information
+        uint8_t payload6[sizeof(event1_op1_desc) + 4];
+        byte_loc = 0;
+        payload6[byte_loc++] = OPTION_BYTE;
+        payload6[byte_loc++] = (event1_id & 0x300) >> 8;
+        payload6[byte_loc++] = event1_id & 0xFF;
+        payload6[byte_loc++] = (uint8_t)sizeof(event1_op1_desc);
+        for(int i = 0; i < sizeof(event1_op1_desc); i++)
+        {
+          payload6[byte_loc++] = event1_op1_desc[i];
+        }
+        
+        tx = Tx64Request(addr64, payload6, sizeof(payload6));
         //tx.setFrameId(0);
         xbee.send(tx);
         AwaitConfirmation();
@@ -251,15 +264,14 @@ void HandleXbeePacket()
             if(event2_trig > 0)
               ThrowEvent2();
             break;
+          
+          case event3_id:
+            if(event3_trig > 0)
+              ToggleLight();
         }
         break;
     }
   }
-  else
-  {
-    // not something we were expecting
-    flashLed(errorLed, 1, 25);    
-  } 
 }
 
 void AwaitConfirmation()
@@ -278,8 +290,7 @@ void AwaitConfirmation()
         // get the delivery status, the fifth byte
         if (txStatus.getStatus() == SUCCESS)
         {
-            // success.  time to celebrate
-            flashLed(statusLed, 5, 50);
+          //empty
         }
         else
         {
@@ -347,6 +358,24 @@ void ThrowEvent2()
   payload[0] = THROW_BYTE;
   payload[1] = (uint8_t)(event2_id & 0x300) >> 8;
   payload[2] = (uint8_t)(event2_id & 0xFF);
+  
+  tx = Tx64Request(addr64, payload, sizeof(payload));
+  xbee.send(tx);
+  AwaitConfirmation();
+}
+
+void ToggleLight()
+{
+  currentLedStatus = !currentLedStatus;
+  
+  digitalWrite(ledPin, currentLedStatus);
+  
+  Tx64Request tx;
+  
+  uint8_t  payload[3];
+  payload[0] = THROW_BYTE;
+  payload[1] = (uint8_t)(event3_id & 0x300) >> 8;
+  payload[2] = (uint8_t)(event3_id & 0xFF);
   
   tx = Tx64Request(addr64, payload, sizeof(payload));
   xbee.send(tx);
