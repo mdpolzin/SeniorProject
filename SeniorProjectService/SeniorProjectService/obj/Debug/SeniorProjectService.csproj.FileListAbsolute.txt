@@ -18,3 +18,13 @@ D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\o
 D:\My Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.AuditNode.resources
 C:\Users\Michael\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.exe.config
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.exe
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.pdb
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csprojResolveAssemblyReference.cache
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.AuditNode.resources
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.ConnectedNodesWindow.resources
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.EventWindow.resources
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\obj\Debug\SeniorProjectService.csproj.GenerateResource.Cache
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.exe
+C:\Users\mipolzin\Documents\GitHub\SeniorProject\SeniorProjectService\SeniorProjectService\bin\Debug\SeniorProjectService.pdb

@@ -1,6 +1,4 @@
-﻿using MySql;
-using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -55,7 +53,7 @@ namespace SeniorProjectService
 
 
             // Allow the user to set the appropriate properties.
-            _serialPort.PortName = "COM3";//SetPortName(_serialPort.PortName);
+            _serialPort.PortName = "COM4";//SetPortName(_serialPort.PortName);
             _serialPort.Encoding = Encoding.UTF8;
 
             // Set the read/write timeouts
@@ -471,7 +469,7 @@ namespace SeniorProjectService
         {
             DataSqlConnection.mutex.WaitOne();
             DataSqlConnection.CommandNonQuery(String.Format(
-                "INSERT INTO messages_from_nodes (NodeID, EventID, Option1Val, Option2Val) VALUES({0}, {1}, \"{2}\", \"{3}\")",
+                @"INSERT INTO messages_from_nodes (NodeID, EventID, Option1Val, Option2Val) VALUES({0}, {1}, ""{2}"", ""{3}"")",
                 contactingNode.GetNodeID(),
                 thisEvent.ID,
                 op1Str,
@@ -485,7 +483,7 @@ namespace SeniorProjectService
             if (op1Str != "")
             {
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "UPDATE options SET Value=\"{0}\" WHERE NodeID={1} AND EventID={2} AND OptionNum=1",
+                    @"UPDATE options SET Value=""{0}"" WHERE NodeID={1} AND EventID={2} AND OptionNum=1",
                     op1Str,
                     contactingNode.GetNodeID(),
                     thisEvent.ID));
@@ -493,7 +491,7 @@ namespace SeniorProjectService
             if (op2Str != "")
             {
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "UPDATE options SET Value=\"{0}\" WHERE NodeID={1} AND EventID={2} AND OptionNum=2",
+                    @"UPDATE options SET Value=""{0}"" WHERE NodeID={1} AND EventID={2} AND OptionNum=2",
                     op2Str,
                     contactingNode.GetNodeID(),
                     thisEvent.ID));
@@ -599,7 +597,7 @@ namespace SeniorProjectService
             if (ret == "")
             {
                 query = String.Format(
-                    "INSERT INTO options VALUES({0}, {1}, {2}, \"{3}\", null)",
+                    @"INSERT INTO options VALUES({0}, {1}, {2}, ""{3}"", null)",
                     contactingNode.GetNodeID(),
                     currEvent.ID,
                     opNum,
@@ -608,7 +606,7 @@ namespace SeniorProjectService
             else
             {
                 query = String.Format(
-                    "UPDATE options SET Description = \"{3}\", Value = \"\" WHERE NodeID = {0} AND EventID = {1} AND OptionNum = {2}",
+                    @"UPDATE options SET Description = ""{3}"", Value = """" WHERE NodeID = {0} AND EventID = {1} AND OptionNum = {2}",
                     contactingNode.GetNodeID(),
                     currEvent.ID,
                     opNum,
@@ -635,7 +633,7 @@ namespace SeniorProjectService
             if (ret == "")
             {
                 query = String.Format(
-                "INSERT INTO events VALUES({0}, {1}, \"{2}\", \"{3}\", {4}, 0)",
+                @"INSERT INTO events VALUES({0}, {1}, ""{2}"", ""{3}"", {4}, 0)",
                 contactingNode.GetNodeID(),
                 e.ID,
                 e.Name,
@@ -645,7 +643,7 @@ namespace SeniorProjectService
             else
             {
                 query = String.Format(
-                "UPDATE events SET Name = \"{0}\", Description = \"{1}\", Triggerable = {2}, Count = 0 WHERE NodeId = \"{3}\" AND EventId = \"{4}\"",
+                @"UPDATE events SET Name = ""{0}"", Description = ""{1}"", Triggerable = {2}, Count = 0 WHERE NodeId = ""{3}"" AND EventId = ""{4}""",
                 e.Name,
                 e.Description,
                 t,
@@ -660,13 +658,15 @@ namespace SeniorProjectService
         private static void AddNodeToDatabase(ForeignNode contactingNode)
         {
             DataSqlConnection.mutex.WaitOne();
-            string ret = DataSqlConnection.CommandReturnLine(String.Format("SELECT ID FROM nodes WHERE ForeignAddress = {0};", contactingNode.GetAddress()));
+            string ret = DataSqlConnection.CommandReturnLine(String.Format(
+                "SELECT ID FROM nodes WHERE ForeignAddress = {0};",
+                contactingNode.GetAddress()));
 
             if (ret == "")
             {
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "INSERT INTO nodes (Name, Alias, Brand, ForeignAddress, AddressHexRep, Registered, IsForeign, Version) " +
-                    "VALUES(\"{0}\", \"{1}\", \"{2}\", {3}, \"{4}\", 1, 1, {5})",
+                    "INSERT INTO Nodes (Name, Alias, Brand, ForeignAddress, AddressHexRep, Registered, IsForeign, Version) " +
+                    @"VALUES (""{0}"", ""{1}"", ""{2}"", {3}, ""{4}"", 1, 1, {5})",
                     contactingNode.GetName(),
                     contactingNode.GetAlias(),
                     contactingNode.GetBrand(),
@@ -683,7 +683,7 @@ namespace SeniorProjectService
                 contactingNode.SetAlias(contactingNode.GetName() + contactingNode.GetNodeID());
 
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "UPDATE nodes SET Alias = \"{0}\", Registered = '1' WHERE ID = {1}",
+                    @"UPDATE nodes SET Alias = ""{0}"", Registered = '1' WHERE ID = {1}",
                     contactingNode.GetAlias(),
                     contactingNode.GetNodeID()));
             }
@@ -694,7 +694,7 @@ namespace SeniorProjectService
                 contactingNode.SetAlias(contactingNode.GetName() + contactingNode.GetNodeID());
 
                 DataSqlConnection.CommandNonQuery(String.Format(
-                    "UPDATE nodes SET Name = \"{0}\", Alias = \"{1}\", Brand = \"{2}\", ForeignAddress = {3}, AddressHexRep = \"{4}\", Registered = 1, IsForeign = 1, Version = {5} WHERE ID = {6}",
+                    @"UPDATE nodes SET Name = ""{0}"", Alias = ""{1}"", Brand = ""{2}"", ForeignAddress = {3}, AddressHexRep = ""{4}"", Registered = 1, IsForeign = 1, Version = {5} WHERE ID = {6}",
                     contactingNode.GetName(),
                     contactingNode.GetAlias(),
                     contactingNode.GetBrand(),
@@ -710,14 +710,14 @@ namespace SeniorProjectService
     public class DataSqlConnection
     {
         private static bool connected = false;
-        public static MySqlConnection thisConnection;
+        public static SqlConnection thisConnection;
         public static Mutex mutex = new Mutex();
 
         public static void Connect()
         {
             try
             {
-                thisConnection = new MySqlConnection(@"server = 127.0.0.1; database = SeniorProject; uid = root; pwd = Cpgkzxa3");
+                thisConnection = new SqlConnection(@"server = vvqkxhtlqn.database.windows.net; database = SMARTHouseProject_db; uid = polzin13; pwd = Pe-n15:)");
                 thisConnection.Open();
                 connected = true;
             }
@@ -728,7 +728,7 @@ namespace SeniorProjectService
         {
             if (connected)
             {
-                MySqlCommand command = thisConnection.CreateCommand();
+                SqlCommand command = thisConnection.CreateCommand();
                 command.CommandText = query;
                 command.ExecuteNonQuery();
             }
@@ -739,9 +739,9 @@ namespace SeniorProjectService
             if(connected)
             {
                 string response = "";
-                MySqlCommand command = thisConnection.CreateCommand();
+                SqlCommand command = thisConnection.CreateCommand();
                 command.CommandText = query;
-                MySqlDataReader reader = command.ExecuteReader();
+                SqlDataReader reader = command.ExecuteReader();
                 while (reader.Read())
                 {
                     for (int i = 0; i < reader.VisibleFieldCount; i++)
